@@ -1,0 +1,21 @@
+.gradle/
+build/
+local.properties
+captures/
+.kotlin/
+*.iml
+.idea/
+.DS_Store
+
+# 제출용 release APK(apk/)만 추적한다
+*.apk
+*.aab
+!apk/*.apk
+
+# 서명 키
+*.jks
+*.keystore
+keystore.properties
+
+# Claude Code 개인 설정
+.claude/settings.local.json

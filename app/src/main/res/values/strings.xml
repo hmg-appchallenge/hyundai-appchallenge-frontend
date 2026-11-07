@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 임시 이름. 서비스명이 정해지면 여기만 바꾼다. -->
+    <string name="app_name">차량 리듬 동요</string>
+</resources>
