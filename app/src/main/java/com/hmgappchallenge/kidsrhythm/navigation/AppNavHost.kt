@@ -12,7 +12,7 @@ import com.hmgappchallenge.kidsrhythm.archive.SongArchive
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
-import com.hmgappchallenge.kidsrhythm.family.FakeFamily
+import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
 import com.hmgappchallenge.kidsrhythm.server.SongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
@@ -22,6 +22,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
+import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
 
 private object Route {
@@ -32,6 +33,7 @@ private object Route {
     const val GENERATING = "s05_generating"
     const val COMPLETED = "s06_completed"
     const val ARCHIVE = "s07_archive"
+    const val VOICE_SETTINGS = "s02_1_voice_settings"
 }
 
 /** 기획서 08번 화면 흐름(S01~S07). S00 동의 팝업은 홈 위에 뜬다. */
@@ -41,6 +43,7 @@ fun AppNavHost(
     songArchive: SongArchive,
     consentStore: ConsentStore,
     vehicleSignals: VehicleSignals,
+    familyRepository: FamilyRepository,
 ) {
     val navController = rememberNavController()
     // "나중에"로 닫은 상태가 다른 화면에 다녀와도 유지되도록 화면 밖에서 들고 있는다
@@ -57,7 +60,11 @@ fun AppNavHost(
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
                 // 플레이어를 구현하면 연결한다
                 onPlayRecent = {},
-                onAgreeConsent = consentGate::agree,
+                // 흐름도: 동의하면 가족 목소리 등록(S02-1)으로 이어진다
+                onAgreeConsent = {
+                    consentGate.agree()
+                    navController.navigate(Route.VOICE_SETTINGS)
+                },
                 onDismissConsent = consentGate::dismiss,
             )
         }
@@ -78,17 +85,19 @@ fun AppNavHost(
         }
         composable(Route.BASE_BEAT) {
             val vehicle by vehicleSignals.state.collectAsState(initial = null)
+            val family by familyRepository.members.collectAsState()
             BaseBeatScreen(
                 speedKmh = vehicle?.speedKmh ?: 0f,
-                family = FakeFamily.members,
+                family = family,
                 onBack = { navController.popBackStack() },
-                // TODO(가족 목소리): S02-1 화면이 생기면 연결한다
-                onOpenVoiceSettings = {},
+                onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
                 onStartRecording = { navController.navigate(Route.RECORDING) },
             )
         }
         composable(Route.RECORDING) {
+            val family by familyRepository.members.collectAsState()
             RecordingRoute(
+                family = family,
                 onBack = { navController.popBackStack() },
                 onComplete = { navController.navigate(Route.GENERATING) },
             )
@@ -115,6 +124,19 @@ fun AppNavHost(
                         popUpTo(Route.HOME)
                     }
                 },
+            )
+        }
+        composable(Route.VOICE_SETTINGS) {
+            val members by familyRepository.members.collectAsState()
+            VoiceSettingsScreen(
+                members = members,
+                onBack = { navController.popBackStack() },
+                // TODO(3-B): 추가·수정 팝업(S02-2·S02-3)을 연결한다
+                onEdit = {},
+                onAdd = {},
+                // 완료하기·나중에 하기 모두 들어온 곳(홈 또는 S03)으로 돌아간다
+                onDone = { navController.popBackStack() },
+                onLater = { navController.popBackStack() },
             )
         }
         composable(Route.ARCHIVE) {

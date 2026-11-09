@@ -64,7 +64,7 @@ private val PlayheadDotSize = 18.dp
 
 /** S04 녹음. 경과 시간을 들고 있다가 멈추기를 누르면 시간을 멈춘다. */
 @Composable
-fun RecordingRoute(onBack: () -> Unit, onComplete: () -> Unit) {
+fun RecordingRoute(family: List<FamilyMember>, onBack: () -> Unit, onComplete: () -> Unit) {
     var elapsedMillis by rememberSaveable { mutableLongStateOf(0L) }
     var isPaused by rememberSaveable { mutableStateOf(false) }
     // 백그라운드로 가면 녹음을 멈춘다. 돌아와서는 사용자가 계속하기로 다시 시작한다
@@ -90,7 +90,7 @@ fun RecordingRoute(onBack: () -> Unit, onComplete: () -> Unit) {
     }
     val snapshot = remember(elapsedMillis) { FakeRecording.snapshot(elapsedMillis) }
     RecordingScreen(
-        family = FakeRecording.family,
+        family = family,
         snapshot = snapshot,
         isPaused = isPaused,
         onBack = onBack,
