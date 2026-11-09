@@ -4,12 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -40,23 +37,5 @@ fun ScreenSkeleton(
             Text(text = description, style = MaterialTheme.typography.bodyLarge)
             actions()
         }
-    }
-}
-
-/** 기획서 05번의 Large 버튼(높이 100dp). */
-@Composable
-fun LargeButton(
-    text: String,
-    onClick: () -> Unit,
-    enabled: Boolean = true,
-) {
-    Button(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = Modifier
-            .heightIn(min = 100.dp)
-            .widthIn(min = 320.dp),
-    ) {
-        Text(text = text, style = MaterialTheme.typography.titleLarge)
     }
 }

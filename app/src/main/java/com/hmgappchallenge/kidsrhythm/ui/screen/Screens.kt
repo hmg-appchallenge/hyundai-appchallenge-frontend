@@ -8,36 +8,8 @@ import com.hmgappchallenge.kidsrhythm.server.SongRequest
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.ScreenSkeleton
 import java.io.File
-import kotlinx.coroutines.delay
 
 // 화면 뼈대다. UI 시안이 나오면 화면별 파일로 나눠 구현한다.
-
-private const val INTRO_DURATION_MILLIS = 3_000L
-
-@Composable
-fun HomeScreen(onStart: () -> Unit, onOpenArchive: () -> Unit) {
-    ScreenSkeleton(
-        screenId = "S01",
-        title = "홈",
-        description = "만들기 · 보관함, 최근 곡 1개",
-    ) {
-        LargeButton(text = "시작", onClick = onStart)
-        LargeButton(text = "보관함", onClick = onOpenArchive)
-    }
-}
-
-@Composable
-fun IntroScreen(onFinished: () -> Unit) {
-    LaunchedEffect(Unit) {
-        delay(INTRO_DURATION_MILLIS)
-        onFinished()
-    }
-    ScreenSkeleton(
-        screenId = "S02",
-        title = "시작 안내",
-        description = "음악 한번 만들어볼까? (3초 뒤 자동 시작)",
-    )
-}
 
 @Composable
 fun BaseBeatScreen(onStartRecording: () -> Unit) {
