@@ -1,9 +1,7 @@
 package com.hmgappchallenge.kidsrhythm.recording
 
-import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
-
-/** 녹음에 함께하는 가족 한 명과 그 사람이 고른 악기. */
-data class FamilyMember(val id: Long, val name: String, val instrument: Instrument)
+import com.hmgappchallenge.kidsrhythm.family.FakeFamily
+import com.hmgappchallenge.kidsrhythm.family.FamilyMember
 
 /** 녹음 화면에 그릴 순간 상태. */
 data class RecordingSnapshot(
@@ -19,12 +17,7 @@ data class RecordingSnapshot(
  * 경과 시간만으로 모든 값을 정해서 같은 시간이면 항상 같은 화면이 나온다.
  */
 object FakeRecording {
-    // TODO(가족 목소리): S02-1에서 등록한 가족과 악기로 바꾼다
-    val family = listOf(
-        FamilyMember(1, "엄마", Instrument.DRUM),
-        FamilyMember(2, "첫째", Instrument.SHAKER),
-        FamilyMember(3, "둘째", Instrument.TAMBOURINE),
-    )
+    val family: List<FamilyMember> = FakeFamily.members
 
     const val BAR_INTERVAL_MILLIS = 100L
     private const val SPEAKER_INTERVAL_MILLIS = 2_000L

@@ -12,17 +12,6 @@ import java.io.File
 // 화면 뼈대다. UI 시안이 나오면 화면별 파일로 나눠 구현한다.
 
 @Composable
-fun BaseBeatScreen(onStartRecording: () -> Unit) {
-    ScreenSkeleton(
-        screenId = "S03",
-        title = "차량 베이스 비트",
-        description = "BPM · 속도/패턴/계절 칩, 8스텝 비트 바",
-    ) {
-        LargeButton(text = "녹음 시작", onClick = onStartRecording)
-    }
-}
-
-@Composable
 fun GeneratingScreen(songGenerator: SongGenerator, onGenerated: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {

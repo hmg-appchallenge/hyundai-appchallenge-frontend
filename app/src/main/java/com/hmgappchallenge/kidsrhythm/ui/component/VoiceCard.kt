@@ -57,10 +57,9 @@ fun VoiceCard(
     // border는 공간을 차지하지 않으므로 패딩에 두께를 더해 테두리 바깥 크기를 맞춘다
     val borderWidth = 2.dp
     Column(
-        // 기본 너비는 508. 부모가 weight 등으로 크기를 정하면 그 크기를 따른다
-        modifier = Modifier
+        // 기본 너비는 508. 호출하는 쪽이 modifier나 weight로 크기를 정하면 그 크기를 따른다
+        modifier = modifier
             .width(508.dp)
-            .then(modifier)
             .then(if (playing) Modifier.dropShadow(AppColors.MusicPrimary.copy(alpha = 0.2f), 8.dp, 16.dp, CardCornerRadius) else Modifier)
             .clip(CardShape)
             .background(AppColors.SurfaceBasic)

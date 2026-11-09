@@ -21,8 +21,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,6 +31,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.AppTab
 import com.hmgappchallenge.kidsrhythm.ui.component.HintChip
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.StageFadeBackground
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlinx.coroutines.delay
@@ -40,10 +39,6 @@ import kotlinx.coroutines.delay
 internal const val INTRO_DURATION_MILLIS = 3_000L
 private const val SPINNER_TURN_MILLIS = 1_000
 
-private val IntroStageBackground = Brush.verticalGradient(
-    0.333f to AppColors.StageBackground,
-    0.715f to Color.Transparent,
-)
 
 /** S02 시작 안내. 3초 뒤 자동으로 [onFinished]를 부른다. */
 @Composable
@@ -60,7 +55,7 @@ fun IntroScreen(
     AppPage(
         selectedTab = AppTab.Make,
         onSelectTab = { if (it == AppTab.Archive) onOpenArchive() },
-        stageBackground = IntroStageBackground,
+        stageBackground = StageFadeBackground,
         stage = {
             LoadingSpinner(
                 Modifier

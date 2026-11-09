@@ -32,6 +32,12 @@ import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
 enum class AppTab(val label: String) { Make("만들기"), Archive("보관함") }
 
+/** 위쪽 1/3은 스테이지 색, 아래로 갈수록 투명해지는 스테이지 배경. */
+val StageFadeBackground = Brush.verticalGradient(
+    0.333f to AppColors.StageBackground,
+    0.715f to Color.Transparent,
+)
+
 private val WindowShape = RoundedCornerShape(40.dp)
 private val StageShape = RoundedCornerShape(48.dp)
 private val SegmentShape = RoundedCornerShape(32.dp)

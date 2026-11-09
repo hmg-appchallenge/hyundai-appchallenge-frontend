@@ -35,12 +35,13 @@ import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.SettingBadge
+import com.hmgappchallenge.kidsrhythm.ui.component.SettingRow
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
 private val PopupShape = RoundedCornerShape(48.dp)
 private val ItemsShape = RoundedCornerShape(32.dp)
-private val PrivacyShape = RoundedCornerShape(23.3.dp)
 private val BORDER_WIDTH = 2.dp
 
 private data class ConsentItem(@DrawableRes val icon: Int, val title: String, val description: String)
@@ -91,7 +92,14 @@ fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
                 ConsentItemRow(item, showDivider = index < ConsentItems.lastIndex)
             }
         }
-        PrivacyPolicyButton(onClick = {})
+        // TODO(기획): 개인정보 처리방침 주소가 정해지면 연결한다
+        SettingRow(
+            badge = SettingBadge.Privacy,
+            title = "개인정보 처리방침 자세히 보기",
+            subtitle = "설정에서 언제든 철회할 수 있어요",
+            onClick = {},
+            modifier = Modifier.fillMaxWidth(),
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LargeButton(
                 text = "동의하고 시작",
@@ -142,51 +150,6 @@ private fun Modifier.bottomDivider(): Modifier = drawBehind {
     val stroke = BORDER_WIDTH.toPx()
     val y = size.height - stroke / 2
     drawLine(AppColors.BasicAlphaLight100, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
-}
-
-@Composable
-private fun PrivacyPolicyButton(onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(151.dp)
-            .clip(PrivacyShape)
-            .background(AppColors.BasicStaticLight100)
-            .border(BORDER_WIDTH, AppColors.BasicAlphaLight100, PrivacyShape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 37.dp + BORDER_WIDTH),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(26.dp), verticalAlignment = Alignment.CenterVertically) {
-            PrivacyBadge()
-            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                Text("개인정보 처리방침 자세히 보기", style = AppTypography.TitleSmall, color = AppColors.TextDarkPrimary)
-                Text("설정에서 언제든 철회할 수 있어요", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
-            }
-        }
-        Image(painterResource(R.drawable.ic_chevron_right), contentDescription = null)
-    }
-}
-
-/** 회색 둥근 상자 안의 방패 아이콘. */
-@Composable
-private fun PrivacyBadge() {
-    Box(
-        modifier = Modifier
-            .size(83.89.dp)
-            .clip(RoundedCornerShape(25.63.dp))
-            .background(AppColors.BasicGrayscale100),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_shield),
-            contentDescription = null,
-            tint = AppColors.FieldFocused,
-            modifier = Modifier
-                .padding(start = 19.14.dp, top = 17.57.dp)
-                .size(46.5.dp),
-        )
-    }
 }
 
 @Preview(widthDp = 1700, heightDp = 1184)
