@@ -42,8 +42,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.hmgappchallenge.kidsrhythm.R
+import com.hmgappchallenge.kidsrhythm.family.FamilyMember
 import com.hmgappchallenge.kidsrhythm.recording.FakeRecording
-import com.hmgappchallenge.kidsrhythm.recording.FamilyMember
 import com.hmgappchallenge.kidsrhythm.recording.RecordingSnapshot
 import com.hmgappchallenge.kidsrhythm.recording.formatElapsed
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton

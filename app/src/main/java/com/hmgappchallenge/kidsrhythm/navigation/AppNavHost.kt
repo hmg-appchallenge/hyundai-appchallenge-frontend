@@ -12,6 +12,7 @@ import com.hmgappchallenge.kidsrhythm.archive.SongArchive
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
+import com.hmgappchallenge.kidsrhythm.family.FakeFamily
 import com.hmgappchallenge.kidsrhythm.server.SongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
@@ -21,6 +22,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
+import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
 
 private object Route {
     const val HOME = "s01_home"
@@ -38,6 +40,7 @@ fun AppNavHost(
     songGenerator: SongGenerator,
     songArchive: SongArchive,
     consentStore: ConsentStore,
+    vehicleSignals: VehicleSignals,
 ) {
     val navController = rememberNavController()
     // "나중에"로 닫은 상태가 다른 화면에 다녀와도 유지되도록 화면 밖에서 들고 있는다
@@ -74,7 +77,15 @@ fun AppNavHost(
             )
         }
         composable(Route.BASE_BEAT) {
-            BaseBeatScreen(onStartRecording = { navController.navigate(Route.RECORDING) })
+            val vehicle by vehicleSignals.state.collectAsState(initial = null)
+            BaseBeatScreen(
+                speedKmh = vehicle?.speedKmh ?: 0f,
+                family = FakeFamily.members,
+                onBack = { navController.popBackStack() },
+                // TODO(가족 목소리): S02-1 화면이 생기면 연결한다
+                onOpenVoiceSettings = {},
+                onStartRecording = { navController.navigate(Route.RECORDING) },
+            )
         }
         composable(Route.RECORDING) {
             RecordingRoute(

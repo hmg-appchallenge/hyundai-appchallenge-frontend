@@ -30,16 +30,17 @@ fun InstrumentOption(
     instrument: Instrument,
     name: String,
     season: String,
-    onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
 ) {
     Column(
+        // 기본 크기는 258×300. 호출하는 쪽이 modifier로 크기를 정하면 그 크기를 따른다 (먼저 적용한 크기가 이긴다)
         modifier = modifier
             .size(width = 258.dp, height = 300.dp)
             .clip(CardShape)
             .background(AppColors.SurfaceBasic)
             .border(BORDER_WIDTH, AppColors.BasicAlphaLight100, CardShape)
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             // border는 공간을 차지하지 않으므로 패딩에 두께를 더한다
             .padding(start = 16.dp + BORDER_WIDTH, end = 16.dp + BORDER_WIDTH, top = 32.dp + BORDER_WIDTH, bottom = 28.dp + BORDER_WIDTH),
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
