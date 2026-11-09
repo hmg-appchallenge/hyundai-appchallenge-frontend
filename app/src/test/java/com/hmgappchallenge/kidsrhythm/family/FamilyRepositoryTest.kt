@@ -10,15 +10,15 @@ class FamilyRepositoryTest {
     @Test
     fun `가족은 최대 4명까지 추가하고 다 차면 더 받지 않는다`() {
         val repo = InMemoryFamilyRepository(initial = emptyList())
-        repeat(MAX_FAMILY_MEMBERS) { assertTrue(repo.add("가족$it", Instrument.DRUM)) }
-        assertFalse(repo.add("다섯째", Instrument.SHAKER))
+        repeat(MAX_FAMILY_MEMBERS) { assertTrue(repo.add("가족$it", Instrument.DRUM, hasVoice = true)) }
+        assertFalse(repo.add("다섯째", Instrument.SHAKER, hasVoice = true))
         assertEquals(MAX_FAMILY_MEMBERS, repo.members.value.size)
     }
 
     @Test
     fun `새 가족은 기존과 겹치지 않는 번호를 받는다`() {
         val repo = InMemoryFamilyRepository(initial = FakeFamily.members)
-        repo.add("넷째", Instrument.SHAKER)
+        repo.add("넷째", Instrument.SHAKER, hasVoice = true)
         val ids = repo.members.value.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
     }
@@ -34,9 +34,9 @@ class FamilyRepositoryTest {
     @Test
     fun `가족을 삭제하면 목록에서 빠지고 빈 자리에 다시 추가할 수 있다`() {
         val repo = InMemoryFamilyRepository(initial = FakeFamily.members)
-        repo.add("넷째", Instrument.DRUM)
+        repo.add("넷째", Instrument.DRUM, hasVoice = true)
         repo.delete(repo.members.value.first().id)
         assertEquals(3, repo.members.value.size)
-        assertTrue(repo.add("새 가족", Instrument.SHAKER))
+        assertTrue(repo.add("새 가족", Instrument.SHAKER, hasVoice = true))
     }
 }

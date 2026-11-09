@@ -35,12 +35,12 @@ import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
 import com.hmgappchallenge.kidsrhythm.ui.component.SettingBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.SettingRow
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
-private val PopupShape = RoundedCornerShape(48.dp)
 private val ItemsShape = RoundedCornerShape(32.dp)
 private val BORDER_WIDTH = 2.dp
 
@@ -55,67 +55,52 @@ private val ConsentItems = listOf(
 /** S00 보호자 동의 팝업. 앱 창을 어둡게 덮고 가운데에 뜬다. */
 @Composable
 fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
-    // 뒤 화면을 누를 수 없게 딤이 터치를 막는다
-    Box(
-        modifier = Modifier
-            .matchParentSize()
-            .background(AppColors.Dim)
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {}),
-    )
-    Column(
-        modifier = Modifier
-            .align(Alignment.TopCenter)
-            .padding(top = 144.dp)
-            .width(1200.dp)
-            .clip(PopupShape)
-            .background(AppColors.BackgroundPopup)
-            .border(BORDER_WIDTH, AppColors.BasicAlphaLight50, PopupShape)
-            .padding(48.dp + BORDER_WIDTH),
-        verticalArrangement = Arrangement.spacedBy(40.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
-            Text("아이 목소리를 사용해도 될까요?", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
-            Text(
-                "노래를 만들려면 보호자의 동의가 필요해요.\n처음 한 번만 물어보고, 이어서 멤버 목소리를 등록해요.",
-                style = AppTypography.BodyMedium,
-                color = AppColors.TextWarm,
-            )
-        }
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(ItemsShape)
-                .background(AppColors.BasicAlphaLight50)
-                .padding(horizontal = 32.dp, vertical = 8.dp),
-        ) {
-            ConsentItems.forEachIndexed { index, item ->
-                ConsentItemRow(item, showDivider = index < ConsentItems.lastIndex)
+    PopupOverlay(topPadding = 144.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
+                Text("아이 목소리를 사용해도 될까요?", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
+                Text(
+                    "노래를 만들려면 보호자의 동의가 필요해요.\n처음 한 번만 물어보고, 이어서 멤버 목소리를 등록해요.",
+                    style = AppTypography.BodyMedium,
+                    color = AppColors.TextWarm,
+                )
             }
-        }
-        // TODO(기획): 개인정보 처리방침 주소가 정해지면 연결한다
-        SettingRow(
-            badge = SettingBadge.Privacy,
-            title = "개인정보 처리방침 자세히 보기",
-            subtitle = "설정에서 언제든 철회할 수 있어요",
-            onClick = {},
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            LargeButton(
-                text = "동의하고 시작",
-                onClick = onAgree,
-                icon = R.drawable.ic_check,
-                textStyle = AppTypography.TitleSmallExtraStrong,
-                modifier = Modifier.weight(1f),
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(ItemsShape)
+                    .background(AppColors.BasicAlphaLight50)
+                    .padding(horizontal = 32.dp, vertical = 8.dp),
+            ) {
+                ConsentItems.forEachIndexed { index, item ->
+                    ConsentItemRow(item, showDivider = index < ConsentItems.lastIndex)
+                }
+            }
+            // TODO(기획): 개인정보 처리방침 주소가 정해지면 연결한다
+            SettingRow(
+                badge = SettingBadge.Privacy,
+                title = "개인정보 처리방침 자세히 보기",
+                subtitle = "설정에서 언제든 철회할 수 있어요",
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
             )
-            LargeButton(
-                text = "나중에",
-                onClick = onDismiss,
-                icon = R.drawable.ic_close,
-                variant = LargeButtonVariant.Secondary,
-                textStyle = AppTypography.TitleSmallExtraStrong,
-                modifier = Modifier.weight(1f),
-            )
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                LargeButton(
+                    text = "동의하고 시작",
+                    onClick = onAgree,
+                    icon = R.drawable.ic_check,
+                    textStyle = AppTypography.TitleSmallExtraStrong,
+                    modifier = Modifier.weight(1f),
+                )
+                LargeButton(
+                    text = "나중에",
+                    onClick = onDismiss,
+                    icon = R.drawable.ic_close,
+                    variant = LargeButtonVariant.Secondary,
+                    textStyle = AppTypography.TitleSmallExtraStrong,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
