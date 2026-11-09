@@ -55,16 +55,18 @@ fun VoiceCard(
 ) {
     val playing = state == VoiceCardState.Playing
     // border는 공간을 차지하지 않으므로 패딩에 두께를 더해 테두리 바깥 크기를 맞춘다
-    val borderWidth = if (playing) 4.dp else 2.dp
+    val borderWidth = 2.dp
     Column(
-        modifier = modifier
+        // 기본 너비는 508. 부모가 weight 등으로 크기를 정하면 그 크기를 따른다
+        modifier = Modifier
             .width(508.dp)
+            .then(modifier)
             .then(if (playing) Modifier.dropShadow(AppColors.MusicPrimary.copy(alpha = 0.2f), 8.dp, 16.dp, CardCornerRadius) else Modifier)
             .clip(CardShape)
             .background(AppColors.SurfaceBasic)
             .border(
                 width = borderWidth,
-                color = if (playing) AppColors.MusicPrimary else AppColors.BasicAlphaLight100,
+                color = if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight100,
                 shape = CardShape,
             )
             .padding(28.dp + borderWidth),
@@ -99,7 +101,7 @@ private fun StatusPill(playing: Boolean) {
     Row(
         modifier = Modifier
             .clip(CircleShape)
-            .background(if (playing) AppColors.MusicPrimary else AppColors.BasicAlphaLight50)
+            .background(if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight50)
             .padding(start = 16.dp, end = 20.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -133,7 +135,7 @@ private fun LevelBars(playing: Boolean) {
                     .weight(1f)
                     .height((if (playing) h else WAITING_LEVEL_HEIGHT).dp)
                     .background(
-                        if (playing) AppColors.MusicPrimary else AppColors.BasicAlphaLight200,
+                        if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight200,
                         RoundedCornerShape(6.dp),
                     ),
             )
@@ -144,11 +146,11 @@ private fun LevelBars(playing: Boolean) {
 @Preview
 @Composable
 private fun VoiceCardPlayingPreview() {
-    VoiceCard(name = "엄마", instrument = Instrument.DRUM, state = VoiceCardState.Playing, modifier = Modifier.padding(24.dp))
+    VoiceCard(name = "엄마", instrument = Instrument.DRUM, state = VoiceCardState.Playing)
 }
 
 @Preview
 @Composable
 private fun VoiceCardWaitingPreview() {
-    VoiceCard(name = "엄마", instrument = Instrument.DRUM, state = VoiceCardState.Waiting, modifier = Modifier.padding(24.dp))
+    VoiceCard(name = "엄마", instrument = Instrument.DRUM, state = VoiceCardState.Waiting)
 }

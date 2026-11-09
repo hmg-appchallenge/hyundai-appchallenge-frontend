@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -21,8 +23,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
@@ -32,11 +36,36 @@ private val WindowShape = RoundedCornerShape(40.dp)
 private val StageShape = RoundedCornerShape(48.dp)
 private val SegmentShape = RoundedCornerShape(32.dp)
 private val SegmentItemShape = RoundedCornerShape(24.dp)
+private val BackButtonShape = RoundedCornerShape(20.dp)
 
-/**
- * 앱 창 공통 틀: 상단 만들기/보관함 탭, 왼쪽 스테이지, 오른쪽 패널.
- * [overlay]는 창 전체를 덮는 팝업 자리다.
- */
+/** 앱 창: 둥근 배경 위에 높이 100의 헤더와 본문을 놓는다. [overlay]는 창 전체를 덮는 팝업 자리다. */
+@Composable
+fun AppWindow(
+    header: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    overlay: @Composable BoxScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .clip(WindowShape)
+            .background(AppColors.AppBackground),
+    ) {
+        Column(modifier = Modifier.padding(start = 64.dp, end = 64.dp, top = 32.dp, bottom = 64.dp)) {
+            Box(modifier = Modifier.height(100.dp), contentAlignment = Alignment.CenterStart) { header() }
+            Column(
+                modifier = Modifier
+                    .padding(top = 32.dp)
+                    .fillMaxSize(),
+                content = content,
+            )
+        }
+        overlay()
+    }
+}
+
+/** 만들기/보관함 탭이 있는 화면: 왼쪽 스테이지, 오른쪽 패널. */
 @Composable
 fun AppPage(
     selectedTab: AppTab,
@@ -47,37 +76,59 @@ fun AppPage(
     modifier: Modifier = Modifier,
     overlay: @Composable BoxScope.() -> Unit = {},
 ) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .clip(WindowShape)
-            .background(AppColors.AppBackground),
+    AppWindow(
+        header = { SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight()) },
+        modifier = modifier,
+        overlay = overlay,
     ) {
-        Column(modifier = Modifier.padding(start = 64.dp, end = 64.dp, top = 32.dp, bottom = 64.dp)) {
-            SegmentedTabs(selectedTab, onSelectTab, Modifier.height(100.dp))
-            Row(
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            Box(
                 modifier = Modifier
-                    .padding(top = 32.dp)
-                    .fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(StageShape)
-                        .background(stageBackground),
-                    content = stage,
-                )
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    content = panel,
-                )
-            }
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .clip(StageShape)
+                    .background(stageBackground),
+                content = stage,
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+                content = panel,
+            )
         }
-        overlay()
+    }
+}
+
+/** 뒤로 버튼과 제목이 있는 하위 화면. 본문은 창 너비를 다 쓴다. */
+@Composable
+fun SubPage(
+    title: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    overlay: @Composable BoxScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    AppWindow(header = { BackHeader(title, onBack) }, modifier = modifier, overlay = overlay, content = content)
+}
+
+@Composable
+private fun BackHeader(title: String, onBack: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .clip(BackButtonShape)
+                .background(AppColors.BasicAlphaLight50)
+                .clickable(role = Role.Button, onClick = onBack),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(R.drawable.ic_back), contentDescription = "뒤로", tint = AppColors.IconDarkPrimary, modifier = Modifier.size(52.dp))
+        }
+        Text(text = title, style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
     }
 }
 
