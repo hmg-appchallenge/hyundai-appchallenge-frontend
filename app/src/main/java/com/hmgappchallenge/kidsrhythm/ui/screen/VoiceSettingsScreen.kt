@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -67,8 +68,9 @@ fun VoiceSettingsScreen(
     onAdd: () -> Unit,
     onDone: () -> Unit,
     onLater: () -> Unit,
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
-    SubPage(title = "목소리 설정", onBack = onBack) {
+    SubPage(title = "목소리 설정", onBack = onBack, overlay = overlay) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("목소리 등록 후", style = LeadTitleStyle, color = AppColors.TextDarkPrimary)
             Text(
@@ -142,7 +144,7 @@ private fun RowScope.MemberSlot(member: FamilyMember, onEdit: () -> Unit) {
                 InstrumentPictogram(member.instrument, size = 22.dp)
                 Text(member.instrument.label, style = PillTextStyle, color = AppColors.TextDarkPrimary)
             }
-            Text("목소리 등록됨", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+            Text(if (member.hasVoice) "목소리 등록됨" else "목소리 등록 전", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
         }
         LargeButton(
             text = "수정",

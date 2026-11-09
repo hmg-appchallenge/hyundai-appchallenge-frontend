@@ -3,7 +3,9 @@ package com.hmgappchallenge.kidsrhythm.navigation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -13,6 +15,7 @@ import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
+import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
 import com.hmgappchallenge.kidsrhythm.server.SongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
@@ -20,6 +23,8 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.MemberEditorDialog
+import com.hmgappchallenge.kidsrhythm.ui.screen.MemberEditorMode
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
@@ -128,15 +133,42 @@ fun AppNavHost(
         }
         composable(Route.VOICE_SETTINGS) {
             val members by familyRepository.members.collectAsState()
+            val vehicle by vehicleSignals.state.collectAsState(initial = null)
+            var editor by remember { mutableStateOf<MemberEditorMode?>(null) }
             VoiceSettingsScreen(
                 members = members,
                 onBack = { navController.popBackStack() },
-                // TODO(3-B): 추가·수정 팝업(S02-2·S02-3)을 연결한다
-                onEdit = {},
-                onAdd = {},
+                onEdit = { editor = MemberEditorMode.Edit(it) },
+                onAdd = { editor = MemberEditorMode.Add },
                 // 완료하기·나중에 하기 모두 들어온 곳(홈 또는 S03)으로 돌아간다
                 onDone = { navController.popBackStack() },
                 onLater = { navController.popBackStack() },
+                overlay = {
+                    editor?.let { mode ->
+                        MemberEditorDialog(
+                            mode = mode,
+                            members = members,
+                            // 이름 입력은 정차 중에만 할 수 있다
+                            nameEditable = vehicle?.isUxRestricted != true,
+                            onDismiss = { editor = null },
+                            onSubmit = { draft ->
+                                val instrument = requireNotNull(draft.instrument)
+                                val hasVoice = draft.voice == VoiceStatus.Registered
+                                when (mode) {
+                                    MemberEditorMode.Add -> familyRepository.add(draft.name, instrument, hasVoice)
+                                    is MemberEditorMode.Edit -> familyRepository.update(
+                                        mode.member.copy(name = draft.name, instrument = instrument, hasVoice = hasVoice),
+                                    )
+                                }
+                                editor = null
+                            },
+                            onDelete = { member ->
+                                familyRepository.delete(member.id)
+                                editor = null
+                            },
+                        )
+                    }
+                },
             )
         }
         composable(Route.ARCHIVE) {

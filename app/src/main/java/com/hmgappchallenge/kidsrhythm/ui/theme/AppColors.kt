@@ -62,4 +62,9 @@ object AppColors {
     val ShakerBackground = Color(0xFFE2F3FF)
     val TambourinePictogram = Color(0xFFFFBC48)
     val TambourineBackground = Color(0xFFFFF3D6)
+    val BellBackground = Color(0xFFE6EBFF)
+    val UkuleleBackground = Color(0xFFDCF5E8)
+    val SteeldrumBackground = Color(0xFFDCEBFF)
+    val GuitarBackground = Color(0xFFFFF3D6)
+    val XylophoneBackground = Color(0xFFFFE3EC)
 }

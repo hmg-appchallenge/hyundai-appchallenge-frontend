@@ -81,6 +81,8 @@ fun VoiceCard(
                 instrument = instrument,
                 modifier = Modifier.clip(CircleShape),
                 size = 96.dp,
+                // 120 배지 기준 아이콘 크기를 유지한다
+                iconSize = 120.dp * instrument.iconRatio,
             )
             Column(
                 modifier = Modifier.weight(1f),

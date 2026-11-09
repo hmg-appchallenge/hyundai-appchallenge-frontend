@@ -2,19 +2,31 @@ package com.hmgappchallenge.kidsrhythm.ui.component
 
 import com.hmgappchallenge.kidsrhythm.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DesignAssetMappingTest {
     @Test
-    fun `악기마다 배지 아이콘과 큰 픽토그램이 연결된다`() {
+    fun `처음 3종 악기는 배지 아이콘과 큰 픽토그램이 모두 있다`() {
         assertEquals(
-            listOf(R.drawable.ic_instrument_drum, R.drawable.ic_instrument_shaker, R.drawable.ic_instrument_tambourine),
-            Instrument.entries.map { it.iconRes },
+            listOf(R.drawable.ic_instrument_drum, R.drawable.ic_instrument_tambourine, R.drawable.ic_instrument_shaker),
+            Instrument.entries.take(3).map { it.iconRes },
         )
         assertEquals(
-            listOf(R.drawable.img_instrument_drum, R.drawable.img_instrument_shaker, R.drawable.img_instrument_tambourine),
-            Instrument.entries.map { it.pictogramRes },
+            listOf(R.drawable.img_instrument_drum, R.drawable.img_instrument_tambourine, R.drawable.img_instrument_shaker),
+            Instrument.entries.take(3).map { it.pictogramRes },
         )
+    }
+
+    @Test
+    fun `악기 고르기에는 8종이 시안 순서대로 나오고 분류마다 하나 이상 있다`() {
+        assertEquals(
+            listOf("북", "탬버린", "셰이커", "벨", "우쿨렐레", "스틸드럼", "기타", "실로폰"),
+            Instrument.entries.map { it.label },
+        )
+        InstrumentCategory.entries.forEach { category ->
+            assertTrue(Instrument.entries.any { it.category == category })
+        }
     }
 
     @Test
