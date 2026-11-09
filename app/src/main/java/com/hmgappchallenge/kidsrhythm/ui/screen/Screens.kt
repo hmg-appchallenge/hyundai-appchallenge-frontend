@@ -23,17 +23,6 @@ fun BaseBeatScreen(onStartRecording: () -> Unit) {
 }
 
 @Composable
-fun RecordingScreen(onComplete: () -> Unit) {
-    ScreenSkeleton(
-        screenId = "S04",
-        title = "녹음",
-        description = "파형 · 좌석 레인, 잡은 단어 칩",
-    ) {
-        LargeButton(text = "완성하기", onClick = onComplete)
-    }
-}
-
-@Composable
 fun GeneratingScreen(songGenerator: SongGenerator, onGenerated: () -> Unit) {
     val context = LocalContext.current
     LaunchedEffect(Unit) {

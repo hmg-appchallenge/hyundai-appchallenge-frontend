@@ -52,6 +52,8 @@ object AppColors {
     val SegmentedBackground = Color(0xFFE0E1E6)
     val ButtonSwitchEnabled = Color(0xFFFFFFFF)
     val Dim = Color(0x66131417)
+    val PlayheadLine = Color(0xFFC9C9C9)
+    val PlayheadDot = Color(0xFFD9D9D9)
 
     // 악기별 (픽토그램 / 배경)
     val DrumPictogram = Color(0xFFFF438E)

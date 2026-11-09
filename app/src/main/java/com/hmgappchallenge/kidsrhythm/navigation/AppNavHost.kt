@@ -20,7 +20,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
-import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
 
 private object Route {
     const val HOME = "s01_home"
@@ -77,7 +77,10 @@ fun AppNavHost(
             BaseBeatScreen(onStartRecording = { navController.navigate(Route.RECORDING) })
         }
         composable(Route.RECORDING) {
-            RecordingScreen(onComplete = { navController.navigate(Route.GENERATING) })
+            RecordingRoute(
+                onBack = { navController.popBackStack() },
+                onComplete = { navController.navigate(Route.GENERATING) },
+            )
         }
         composable(Route.GENERATING) {
             GeneratingScreen(
