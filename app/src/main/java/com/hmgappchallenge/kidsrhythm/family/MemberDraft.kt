@@ -2,11 +2,11 @@ package com.hmgappchallenge.kidsrhythm.family
 
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 
-/** 이름 최대 글자 수. TODO(기획): 확인 중인 값이다 */
+/** 이름 최대 글자 수. */
 const val MAX_NAME_LENGTH = 8
 
-/** 목소리 한 번 녹음하는 길이. TODO(기획): 확인 중인 값이다 (시안의 "2초 남았어요"를 보고 3초로 둠) */
-const val VOICE_SAMPLE_MILLIS = 3_000L
+/** 목소리 한 번 녹음하는 길이. 따라 말할 문장은 항상 "안녕, 우리 같이 노래하자!"로 같다. */
+const val VOICE_SAMPLE_MILLIS = 10_000L
 
 sealed interface VoiceStatus {
     data object None : VoiceStatus
