@@ -62,9 +62,12 @@ private val BarWidth = 12.dp
 private val BarGap = 10.dp
 private val PlayheadDotSize = 18.dp
 
-/** S04 녹음. 경과 시간을 들고 있다가 멈추기를 누르면 시간을 멈춘다. */
+/**
+ * S04 녹음. 경과 시간을 들고 있다가 멈추기를 누르면 시간을 멈춘다.
+ * [onComplete]에는 녹음에서 처음 들린 단어를 넘긴다. 없으면 null.
+ */
 @Composable
-fun RecordingRoute(family: List<FamilyMember>, onBack: () -> Unit, onComplete: () -> Unit) {
+fun RecordingRoute(family: List<FamilyMember>, onBack: () -> Unit, onComplete: (firstWord: String?) -> Unit) {
     var elapsedMillis by rememberSaveable { mutableLongStateOf(0L) }
     var isPaused by rememberSaveable { mutableStateOf(false) }
     // 백그라운드로 가면 녹음을 멈춘다. 돌아와서는 사용자가 계속하기로 다시 시작한다
@@ -94,7 +97,7 @@ fun RecordingRoute(family: List<FamilyMember>, onBack: () -> Unit, onComplete: (
         snapshot = snapshot,
         isPaused = isPaused,
         onBack = onBack,
-        onComplete = onComplete,
+        onComplete = { onComplete(snapshot.heardWords.firstOrNull()) },
         onTogglePause = { isPaused = !isPaused },
     )
 }

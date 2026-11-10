@@ -1,5 +1,6 @@
 package com.hmgappchallenge.kidsrhythm.navigation
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -7,9 +8,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.hmgappchallenge.kidsrhythm.archive.SongArchive
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
@@ -20,7 +23,7 @@ import com.hmgappchallenge.kidsrhythm.server.SongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedScreen
-import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.MemberEditorDialog
@@ -35,7 +38,11 @@ private object Route {
     const val INTRO = "s02_intro"
     const val BASE_BEAT = "s03_base_beat"
     const val RECORDING = "s04_recording"
-    const val GENERATING = "s05_generating"
+    const val ARG_WORD = "word"
+    const val GENERATING = "s05_generating?$ARG_WORD={$ARG_WORD}"
+
+    fun generating(word: String?): String =
+        if (word.isNullOrBlank()) "s05_generating" else "s05_generating?$ARG_WORD=${Uri.encode(word)}"
     const val COMPLETED = "s06_completed"
     const val ARCHIVE = "s07_archive"
     const val VOICE_SETTINGS = "s02_1_voice_settings"
@@ -104,12 +111,22 @@ fun AppNavHost(
             RecordingRoute(
                 family = family,
                 onBack = { navController.popBackStack() },
-                onComplete = { navController.navigate(Route.GENERATING) },
+                onComplete = { word -> navController.navigate(Route.generating(word)) },
             )
         }
-        composable(Route.GENERATING) {
-            GeneratingScreen(
+        composable(
+            route = Route.GENERATING,
+            arguments = listOf(
+                navArgument(Route.ARG_WORD) {
+                    type = NavType.StringType
+                    nullable = true
+                },
+            ),
+        ) { entry ->
+            GeneratingRoute(
                 songGenerator = songGenerator,
+                word = entry.arguments?.getString(Route.ARG_WORD),
+                onBack = { navController.popBackStack() },
                 onGenerated = {
                     navController.navigate(Route.COMPLETED) {
                         popUpTo(Route.HOME)

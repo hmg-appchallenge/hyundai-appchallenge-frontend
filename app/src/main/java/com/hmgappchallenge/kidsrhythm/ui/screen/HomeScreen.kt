@@ -1,10 +1,8 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -13,10 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,6 +24,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotPose
 import com.hmgappchallenge.kidsrhythm.ui.component.SongRow
 import com.hmgappchallenge.kidsrhythm.ui.component.SpeechBubble
+import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
@@ -37,8 +32,6 @@ import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 data class RecentSong(val title: String, val meta: String)
 
 /** 스테이지 바닥: 이 높이에서 시작해 아래로 옅어진다. */
-private val StageFloorTop = 701.dp
-private val StageFloorFadeHeight = 185.dp
 
 @Composable
 fun HomeScreen(
@@ -118,22 +111,6 @@ fun HomeScreen(
             }
         },
     )
-}
-
-@Composable
-private fun StageFloor() {
-    Canvas(Modifier.fillMaxSize()) {
-        val top = StageFloorTop.toPx()
-        drawRect(
-            brush = Brush.verticalGradient(
-                colors = listOf(AppColors.StageFloor, Color.Transparent),
-                startY = top,
-                endY = top + StageFloorFadeHeight.toPx(),
-            ),
-            topLeft = Offset(0f, top),
-            size = Size(size.width, size.height - top),
-        )
-    }
 }
 
 @Preview(widthDp = 1700, heightDp = 1184)
