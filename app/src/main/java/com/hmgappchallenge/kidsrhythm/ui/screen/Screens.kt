@@ -1,32 +1,10 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalContext
-import com.hmgappchallenge.kidsrhythm.server.SongGenerator
-import com.hmgappchallenge.kidsrhythm.server.SongRequest
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.ScreenSkeleton
-import java.io.File
 
 // 화면 뼈대다. UI 시안이 나오면 화면별 파일로 나눠 구현한다.
-
-@Composable
-fun GeneratingScreen(songGenerator: SongGenerator, onGenerated: () -> Unit) {
-    val context = LocalContext.current
-    LaunchedEffect(Unit) {
-        // 녹음과 비트 엔진을 구현하면 실제 값으로 바꾼다.
-        songGenerator.generate(
-            SongRequest(recording = File(context.cacheDir, "recording.pcm"), bpm = 80),
-        )
-        onGenerated()
-    }
-    ScreenSkeleton(
-        screenId = "S05",
-        title = "노래 만드는 중",
-        description = "Tension 로더, 메인 비트 계속 재생",
-    )
-}
 
 @Composable
 fun CompletedScreen(onSave: () -> Unit, onMakeAnother: () -> Unit) {

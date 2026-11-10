@@ -1,11 +1,13 @@
 package com.hmgappchallenge.kidsrhythm.ui.component
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,6 +20,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,6 +32,9 @@ import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
+
+private val StageFloorTop = 701.dp
+private val StageFloorFadeHeight = 185.dp
 
 private val BubbleRadius = 32.dp
 private val BubbleShape = RoundedCornerShape(BubbleRadius)
@@ -50,6 +59,23 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .offset(y = (-1.5).dp)
                 .rotate(180f),
+        )
+    }
+}
+
+/** 스테이지 바닥. 일정 높이부터 바닥색이 아래로 옅어진다. 스테이지 상자를 가득 채워 그린다. */
+@Composable
+fun StageFloor(modifier: Modifier = Modifier) {
+    Canvas(modifier.fillMaxSize()) {
+        val top = StageFloorTop.toPx()
+        drawRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(AppColors.StageFloor, Color.Transparent),
+                startY = top,
+                endY = top + StageFloorFadeHeight.toPx(),
+            ),
+            topLeft = Offset(0f, top),
+            size = Size(size.width, size.height - top),
         )
     }
 }
