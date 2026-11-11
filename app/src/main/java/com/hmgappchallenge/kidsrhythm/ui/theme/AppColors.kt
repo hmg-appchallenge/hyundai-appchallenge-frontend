@@ -70,6 +70,14 @@ object AppColors {
     val TextWarmBody = AppPalette.WarmGray900
     val ButtonWarmSecondary = AppPalette.WarmGray200
 
+    // 보호자 동의 항목 (S00)
+    val ConsentItemsBackground = AppPalette.WarmGray100
+    val ConsentItemDivider = AppPalette.WarmGray300
+
+    // 친구 고르기 (S01-1)
+    val CharacterLockedName = AppPalette.WarmGray800
+    val CharacterLockedLabel = AppPalette.WarmBlack500
+
     // 속도 칩 (S03)
     val SpeedChipMuted = AppPalette.WarmGray200
     val SpeedChipMutedText = AppPalette.WarmBlack800

@@ -55,7 +55,7 @@ private val ConsentItems = listOf(
 /** S00 보호자 동의 팝업. 앱 창을 어둡게 덮고 가운데에 뜬다. */
 @Composable
 fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
-    PopupOverlay(topPadding = 144.dp) {
+    PopupOverlay(topPadding = 96.dp, background = AppColors.PopupWarmBackground) {
         Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
                 Text("아이 목소리를 사용해도 될까요?", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
@@ -69,7 +69,7 @@ fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(ItemsShape)
-                    .background(AppColors.BasicAlphaLight50)
+                    .background(AppColors.ConsentItemsBackground)
                     .padding(horizontal = 32.dp, vertical = 8.dp),
             ) {
                 ConsentItems.forEachIndexed { index, item ->
@@ -90,7 +90,8 @@ fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
                     onClick = onAgree,
                     icon = R.drawable.ic_check,
                     textStyle = AppTypography.TitleSmallExtraStrong,
-                    modifier = Modifier.weight(1f),
+                    // 시안에서 동의 버튼이 나중에 버튼보다 두 배쯤 넓다 (719 : 357)
+                    modifier = Modifier.weight(2f),
                 )
                 LargeButton(
                     text = "나중에",
@@ -126,7 +127,7 @@ private fun ConsentItemRow(item: ConsentItem, showDivider: Boolean) {
         }
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(item.title, style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary)
-            Text(item.description, style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+            Text(item.description, style = AppTypography.LabelMedium, color = AppColors.TextWarmBody)
         }
     }
 }
@@ -134,7 +135,7 @@ private fun ConsentItemRow(item: ConsentItem, showDivider: Boolean) {
 private fun Modifier.bottomDivider(): Modifier = drawBehind {
     val stroke = BORDER_WIDTH.toPx()
     val y = size.height - stroke / 2
-    drawLine(AppColors.BasicAlphaLight100, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+    drawLine(AppColors.ConsentItemDivider, Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
 }
 
 @Preview(widthDp = 1700, heightDp = 1184)
