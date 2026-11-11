@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디자인 원본 경로를 그대로 쓰려고 정밀도 축소·크기 제한 경고를 끈다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="VectorRaster,VectorPath"
+    android:width="52dp"
+    android:height="52dp"
+    android:viewportWidth="52"
+    android:viewportHeight="52">
+    <group android:translateX="0" android:translateY="0">
+        <path
+            android:fillColor="#FFFEFC"
+            android:pathData="M10.8333 6.5H34.6667L41.1667 13V45.5H10.8333V6.5ZM15.1667 10.8333V19.5H32.5V10.8333H15.1667ZM17.3333 30.3333V41.1667H34.6667V30.3333H17.3333Z" />
+    </group>
+</vector>

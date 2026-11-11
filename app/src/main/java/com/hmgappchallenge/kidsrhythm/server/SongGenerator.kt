@@ -9,12 +9,16 @@ data class SongRequest(
     val bpm: Int,
 )
 
-/** 기획서 07번의 응답 JSON 초안. */
+/**
+ * 노래 생성 결과. API 명세 초안(GET /v1/songs/{songId}의 done 응답) 중 화면에 쓰는 값만 둔다.
+ * [title]은 서버가 지어 준 제목이며, 들린 단어가 없으면 null이다.
+ */
 data class GeneratedSong(
+    val title: String?,
     val words: List<String>,
     val onomatopoeia: List<String>,
-    val seatZone: String?,
     val bpm: Int,
+    val durationSec: Int,
     val lyrics: List<String>,
     val audioUrl: String,
 )
@@ -30,11 +34,17 @@ class FakeSongGenerator(
     override suspend fun generate(request: SongRequest): GeneratedSong {
         delay(latencyMillis)
         return GeneratedSong(
+            title = null,
             words = listOf("사과"),
             onomatopoeia = listOf("둥둥"),
-            seatZone = null,
             bpm = request.bpm,
-            lyrics = listOf("사과는 맛있다", "사과는 빨갛다"),
+            durationSec = 102,
+            lyrics = listOf(
+                "사과는 빨갛다, 둥둥 둥둥",
+                "사과는 맛있다, 랄랄라 랄라",
+                "사과는 빨갛다, 둥둥 둥둥",
+                "사과는 맛있다, 랄랄라 랄라",
+            ),
             audioUrl = "",
         )
     }
