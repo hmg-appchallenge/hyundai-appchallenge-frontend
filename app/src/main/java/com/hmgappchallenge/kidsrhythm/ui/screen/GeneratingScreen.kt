@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,8 +66,10 @@ private val StageShape = RoundedCornerShape(48.dp)
 private val StageWidth = 774.dp
 private val StagePanelGap = 52.dp
 
-private val CharacterTop = 254.dp
-private val CharacterWidth = 566.dp
+/** 캐릭터가 앉는 바닥선과 캐릭터 높이. 여백 없는 이미지를 같은 높이로 맞춰 같은 바닥에 앉힌다. */
+private val CharacterFloor = 746.dp
+private val CharacterHeight = 412.dp
+private val CharacterTop = CharacterFloor - CharacterHeight
 
 /** 이웃한 캐릭터의 가운데끼리 거리. */
 private val CharacterSpacing = 310.dp
@@ -208,7 +211,7 @@ private fun BoxScope.CharacterCarousel() {
                 .zIndex(-abs(slot))
                 .padding(top = CharacterTop)
                 .offset(x = CharacterSpacing * slot)
-                .width(CharacterWidth)
+                .height(CharacterHeight)
                 .alpha(1f - (1f - SIDE_CHARACTER_ALPHA) * distance)
                 .blur(SideCharacterBlur * distance),
         )

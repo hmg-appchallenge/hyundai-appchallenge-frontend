@@ -36,7 +36,7 @@ enum class MascotCharacter(
     }
 }
 
-/** 너비만 정하면 높이는 이미지 비율을 따른다. */
+/** 이미지는 여백 없이 잘려 있다. 너비나 높이 하나만 정하면 나머지는 이미지 비율을 따른다. */
 @Composable
 fun Mascot(
     character: MascotCharacter,

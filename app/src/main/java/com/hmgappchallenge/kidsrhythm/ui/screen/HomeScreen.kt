@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,10 +61,10 @@ fun HomeScreen(
                 pose = MascotPose.Sitting,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 304.dp)
+                    .padding(top = 305.dp)
                     // 시안에서 사자는 스테이지 가운데보다 28 왼쪽에 있다
                     .offset(x = (-28).dp)
-                    .width(516.dp),
+                    .height(448.dp),
             )
             HintChip(
                 text = "노래를 완성하면 친구가 나와서 춤춰요",
