@@ -40,9 +40,9 @@ object AppColors {
     val InformativeNegative = Color(0xFFFE3D16)
 
     // 앱 화면 (주황 테마)
-    val AppBackground = Color(0xFFFAF9F7)
-    val BrandOrange = Color(0xFFFF9430)
-    val MusicAccent = Color(0xFFF0A23A)
+    val AppBackground = AppPalette.WarmGray100
+    val BrandOrange = AppPalette.Orange500
+    val MusicAccent = AppPalette.Orange500
     val SongIconBackground = Color(0xFFFFF3D6)
     val StageBackground = Color(0xFFFFF4E9)
     val StageFloor = Color(0xFFFFE7CF)
