@@ -90,4 +90,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    // 단위 테스트는 android.jar의 org.json이 비어 있어서(Stub) 진짜 구현을 넣는다
+    testImplementation(libs.org.json)
 }
