@@ -11,6 +11,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -82,10 +84,14 @@ private val PromptShape = RoundedCornerShape(32.dp)
 private val CategoryChipShape = RoundedCornerShape(16.dp)
 private val CardShape = RoundedCornerShape(24.dp)
 private val FIELD_BORDER = 3.dp
+private val FIELD_IDLE_BORDER = 2.dp
 private val CARD_BORDER = 2.dp
 private val SELECTED_CARD_BORDER = 4.dp
 private const val TAKEN_ALPHA = 0.4f
-private const val DISABLED_FIELD_ALPHA = 0.4f
+
+/** 멤버 삭제 확인 팝업 (너비 808). 앱 창 가운데쯤에 뜬다. */
+private val DeleteConfirmWidth = 808.dp
+private val DeleteConfirmTop = 402.dp
 
 /** 목소리 영역 칩 글자. 시안이 비율로 줄인 값이라 공용 토큰에 없다. */
 private val PromptChipTextStyle = AppTypography.TitleSmall.copy(fontSize = 31.37.sp, lineHeight = 40.33.sp)
@@ -123,6 +129,7 @@ fun BoxScope.MemberEditorDialog(
             }
         }
     }
+    var confirmingDelete by remember(mode) { mutableStateOf(false) }
     val editingId = (mode as? MemberEditorMode.Edit)?.member?.id
     val taken = remember(members, editingId) { takenInstruments(members, editingId) }
 
@@ -179,7 +186,8 @@ fun BoxScope.MemberEditorDialog(
                     is MemberEditorMode.Edit -> {
                         LargeButton(
                             text = "멤버 삭제하기",
-                            onClick = { onDelete(mode.member) },
+                            // 흔들리는 차 안에서 잘못 누르는 것을 막으려고 한 번 더 묻는다
+                            onClick = { confirmingDelete = true },
                             icon = R.drawable.ic_trash,
                             variant = LargeButtonVariant.Secondary,
                             textStyle = AppTypography.TitleSmallExtraStrong,
@@ -210,31 +218,83 @@ fun BoxScope.MemberEditorDialog(
                 .clickable(role = Role.Button, onClick = onDismiss),
         )
     }
+    if (mode is MemberEditorMode.Edit && confirmingDelete) {
+        DeleteMemberConfirm(
+            onCancel = { confirmingDelete = false },
+            onConfirm = { onDelete(mode.member) },
+        )
+    }
 }
 
+/** S02-3a 멤버 삭제 확인. 수정 팝업 위에 한 번 더 띄운다. */
+@Composable
+private fun BoxScope.DeleteMemberConfirm(onCancel: () -> Unit, onConfirm: () -> Unit) {
+    PopupOverlay(
+        topPadding = DeleteConfirmTop,
+        width = DeleteConfirmWidth,
+        background = AppColors.PopupWarmBackground,
+        borderColor = AppColors.PopupWarmBorder,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("멤버를 삭제할까요?", style = AppTypography.TitleLarge, color = AppColors.TextWarmStrong)
+                Text(
+                    "삭제한 멤버는 가족 그룹에서 제외되며, 복구할 수 없습니다. 다시 이용하려면 새로 등록해야 합니다.",
+                    style = AppTypography.BodyLargeStrong,
+                    color = AppColors.TextWarmBody,
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                LargeButton(
+                    text = "취소",
+                    onClick = onCancel,
+                    icon = R.drawable.ic_close,
+                    variant = LargeButtonVariant.WarmSecondary,
+                    modifier = Modifier.weight(1f),
+                )
+                LargeButton(
+                    text = "삭제하기",
+                    onClick = onConfirm,
+                    icon = R.drawable.ic_trash,
+                    variant = LargeButtonVariant.Destructive,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 이름 입력칸. 누르고 있으면 진한 테두리, 아니면 옅은 테두리다.
+ * 주행 중에는 회색 바탕으로 잠그고 키보드를 열지 않는다.
+ */
 @Composable
 private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> Unit, modifier: Modifier = Modifier) {
-    val borderColor = if (name.isEmpty()) AppColors.InformativePositive else AppColors.BrandOrange
+    val interactionSource = remember { MutableInteractionSource() }
+    val focused by interactionSource.collectIsFocusedAsState()
+    val active = enabled && focused
+    val borderWidth = if (active) FIELD_BORDER else FIELD_IDLE_BORDER
     BasicTextField(
         value = name,
         onValueChange = onNameChange,
         enabled = enabled,
         singleLine = true,
+        interactionSource = interactionSource,
         textStyle = AppTypography.TitleMediumNormal.copy(color = AppColors.TextDarkPrimary),
         cursorBrush = SolidColor(AppColors.IconDarkPrimary),
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp)
-            .alpha(if (enabled) 1f else DISABLED_FIELD_ALPHA),
+            .height(100.dp),
         decorationBox = { innerTextField ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .fillMaxHeight()
                     .clip(FieldShape)
-                    .background(AppColors.FieldBackground)
-                    .border(FIELD_BORDER, borderColor, FieldShape)
-                    .padding(horizontal = 32.dp + FIELD_BORDER),
+                    .background(if (enabled) AppColors.FieldBackground else AppColors.BasicGrayscale100)
+                    // 팝업 바탕도 흰색이라 쉬는 상태에도 옅은 테두리로 칸을 보인다
+                    .border(borderWidth, if (active) AppColors.FieldFocused else AppColors.BasicAlphaLight100, FieldShape)
+                    .padding(horizontal = 32.dp + borderWidth),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -246,6 +306,9 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
                 }
                 if (name.isNotEmpty()) {
                     Text("${name.length} / $MAX_NAME_LENGTH", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+                }
+                // 지우기 버튼은 입력하는 동안에만 보인다
+                if (active && name.isNotEmpty()) {
                     Image(
                         painter = painterResource(R.drawable.ic_clear_text),
                         contentDescription = "이름 지우기",
@@ -430,7 +493,7 @@ private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) 
             .height(64.dp)
             .clip(CategoryChipShape)
             .background(if (selected) AppColors.SurfaceBasic else AppColors.BasicAlphaLight50)
-            .then(if (selected) Modifier.border(CARD_BORDER, AppColors.MusicPrimary, CategoryChipShape) else Modifier)
+            .then(if (selected) Modifier.border(CARD_BORDER, AppColors.BrandOrange, CategoryChipShape) else Modifier)
             .clickable(role = Role.Tab, onClick = onClick)
             .padding(horizontal = 24.dp + CARD_BORDER),
         contentAlignment = Alignment.Center,

@@ -25,12 +25,13 @@ import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
-enum class LargeButtonVariant { Primary, Secondary }
+/** Primary는 주황, Secondary는 옅은 회색, WarmSecondary는 따뜻한 회색, Destructive는 삭제용 빨강 바탕이다. */
+enum class LargeButtonVariant { Primary, Secondary, WarmSecondary, Destructive }
 
 private val ButtonShape = RoundedCornerShape(32.dp)
 private const val DISABLED_ALPHA = 0.4f
 
-/** 높이 100의 큰 버튼. Primary는 주황 바탕, Secondary는 옅은 회색 바탕이다. */
+/** 높이 100의 큰 버튼. */
 @Composable
 fun LargeButton(
     text: String,
@@ -41,14 +42,24 @@ fun LargeButton(
     variant: LargeButtonVariant = LargeButtonVariant.Primary,
     textStyle: TextStyle = AppTypography.TitleSmall,
 ) {
-    val primary = variant == LargeButtonVariant.Primary
-    val contentColor = if (primary) AppColors.BasicStaticLight100 else AppColors.TextDarkPrimary
+    val contentColor = when (variant) {
+        LargeButtonVariant.Primary -> AppColors.BasicStaticLight100
+        LargeButtonVariant.Secondary -> AppColors.TextDarkPrimary
+        LargeButtonVariant.WarmSecondary -> AppColors.TextWarmStrong
+        LargeButtonVariant.Destructive -> AppColors.PopupWarmBackground
+    }
+    val background = when (variant) {
+        LargeButtonVariant.Primary -> AppColors.BrandOrange
+        LargeButtonVariant.Secondary -> AppColors.BasicAlphaLight50
+        LargeButtonVariant.WarmSecondary -> AppColors.ButtonWarmSecondary
+        LargeButtonVariant.Destructive -> AppColors.InformativeNegative
+    }
     Row(
         modifier = modifier
             .height(100.dp)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(ButtonShape)
-            .background(if (primary) AppColors.BrandOrange else AppColors.BasicAlphaLight50)
+            .background(background)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 40.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),

@@ -12,9 +12,9 @@ class DesignAssetMappingTest {
     }
 
     @Test
-    fun `악기 고르기에는 12종이 분류별 기획 순서대로 나오고 분류마다 3종씩 있다`() {
+    fun `악기 고르기 전체에는 12종이 시안 순서대로 나오고 분류마다 3종씩 있다`() {
         assertEquals(
-            listOf("북", "스틸드럼", "우드블록", "탬버린", "셰이커", "마라카스", "우쿨렐레", "기타", "하프", "벨", "실로폰", "피아노"),
+            listOf("북", "탬버린", "셰이커", "벨", "우쿨렐레", "스틸드럼", "우드블록", "기타", "하프", "실로폰", "피아노", "마라카스"),
             Instrument.entries.map { it.label },
         )
         InstrumentCategory.entries.forEach { category ->

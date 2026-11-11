@@ -30,7 +30,7 @@ enum class InstrumentCategory(val label: String) {
 private val IconLarge = DpSize(64.dp, 64.dp)
 
 /**
- * 가족 목소리마다 고르는 악기 12종. 분류별로 묶어 기획 순서대로 둔다.
+ * 가족 목소리마다 고르는 악기 12종. 악기 고르기 '전체'에 시안 순서대로 나온다.
  * [iconSize]는 지름 [BADGE_BASE_SIZE] 배지 기준 아이콘 크기다.
  */
 enum class Instrument(
@@ -42,6 +42,16 @@ enum class Instrument(
     val iconSize: DpSize = IconLarge,
 ) {
     DRUM("북", R.drawable.ic_instrument_drum, R.drawable.img_instrument_drum, AppColors.DrumBackground, InstrumentCategory.Percussion),
+    TAMBOURINE("탬버린", R.drawable.ic_instrument_tambourine, R.drawable.img_instrument_tambourine, AppColors.TambourineBackground, InstrumentCategory.Shaken),
+    SHAKER("셰이커", R.drawable.ic_instrument_shaker, R.drawable.img_instrument_shaker, AppColors.ShakerBackground, InstrumentCategory.Shaken),
+    BELL(
+        "벨", R.drawable.ic_instrument_bell, R.drawable.img_instrument_bell, AppColors.BellBackground,
+        InstrumentCategory.Keys, DpSize(54.dp, 62.dp),
+    ),
+    UKULELE(
+        "우쿨렐레", R.drawable.ic_instrument_ukulele, R.drawable.img_instrument_ukulele, AppColors.UkuleleBackground,
+        InstrumentCategory.String, DpSize(50.dp, 50.dp),
+    ),
     STEELDRUM(
         "스틸드럼", R.drawable.ic_instrument_steeldrum, R.drawable.img_instrument_steeldrum, AppColors.SteeldrumBackground,
         InstrumentCategory.Percussion, DpSize(48.dp, 48.dp),
@@ -50,24 +60,14 @@ enum class Instrument(
         "우드블록", R.drawable.ic_instrument_woodblock, R.drawable.img_instrument_woodblock, AppColors.WoodblockBackground,
         InstrumentCategory.Percussion, DpSize(52.dp, 52.dp),
     ),
-    TAMBOURINE("탬버린", R.drawable.ic_instrument_tambourine, R.drawable.img_instrument_tambourine, AppColors.TambourineBackground, InstrumentCategory.Shaken),
-    SHAKER("셰이커", R.drawable.ic_instrument_shaker, R.drawable.img_instrument_shaker, AppColors.ShakerBackground, InstrumentCategory.Shaken),
-    MARACAS("마라카스", R.drawable.ic_instrument_maracas, R.drawable.img_instrument_maracas, AppColors.MaracasBackground, InstrumentCategory.Shaken),
-    UKULELE(
-        "우쿨렐레", R.drawable.ic_instrument_ukulele, R.drawable.img_instrument_ukulele, AppColors.UkuleleBackground,
-        InstrumentCategory.String, DpSize(50.dp, 50.dp),
-    ),
     GUITAR(
         "기타", R.drawable.ic_instrument_guitar, R.drawable.img_instrument_guitar, AppColors.GuitarBackground,
         InstrumentCategory.String, DpSize(56.dp, 56.dp),
     ),
     HARP("하프", R.drawable.ic_instrument_harp, R.drawable.img_instrument_harp, AppColors.HarpBackground, InstrumentCategory.String),
-    BELL(
-        "벨", R.drawable.ic_instrument_bell, R.drawable.img_instrument_bell, AppColors.BellBackground,
-        InstrumentCategory.Keys, DpSize(54.dp, 62.dp),
-    ),
     XYLOPHONE("실로폰", R.drawable.ic_instrument_xylophone, R.drawable.img_instrument_xylophone, AppColors.XylophoneBackground, InstrumentCategory.Keys),
     PIANO("피아노", R.drawable.ic_instrument_piano, R.drawable.img_instrument_piano, AppColors.PianoBackground, InstrumentCategory.Keys),
+    MARACAS("마라카스", R.drawable.ic_instrument_maracas, R.drawable.img_instrument_maracas, AppColors.MaracasBackground, InstrumentCategory.Shaken),
 }
 
 /** [Instrument.iconSize]의 기준이 되는 배지 지름. */

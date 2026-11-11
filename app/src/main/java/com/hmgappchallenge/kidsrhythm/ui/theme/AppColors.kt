@@ -55,6 +55,16 @@ object AppColors {
     val PlayheadLine = Color(0xFFC9C9C9)
     val PlayheadDot = Color(0xFFD9D9D9)
 
+    // 따뜻한 팝업 (멤버 삭제 확인 등)
+    val PopupWarmBackground = AppPalette.WarmWhite100
+    val PopupWarmBorder = AppPalette.WarmGray200
+    val TextWarmStrong = AppPalette.WarmBlack1000
+    val TextWarmBody = AppPalette.WarmGray900
+    val ButtonWarmSecondary = AppPalette.WarmGray200
+
+    // 토스트
+    val ToastBackground = Color(0xFF44464E)
+
     // 목소리 카드 (연주 중 / 대기)
     val VoiceCardName = AppPalette.WarmBlack1000
     val VoiceCardInstrument = AppPalette.WarmBlack500
