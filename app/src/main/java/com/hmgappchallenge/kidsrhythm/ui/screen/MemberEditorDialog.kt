@@ -123,18 +123,24 @@ fun BoxScope.MemberEditorDialog(
     var checking by remember { mutableStateOf(false) }
     var voiceError by remember { mutableStateOf<String?>(null) }
     var uploadPending by remember { mutableStateOf(false) }
-    // 정해진 시간 동안 마이크로 녹음하고, 시간이 다 되면 서버에서 목소리 특징을 받는다
+    // 정해진 시간 동안 마이크로 녹음하고, 시간이 다 되면 서버에서 목소리 특징을 받는다.
+    // 녹음이 끝나는 순간 이 효과는 키(recording)가 바뀌어 취소되므로, 서버로 보내기는 새로 시작되는 효과(recording=false)에서 한다
     val recording = draft.voice is VoiceStatus.Recording
+    var justRecorded by remember { mutableStateOf(false) }
     LaunchedEffect(recording) {
-        if (!recording) return@LaunchedEffect
-        var last = withFrameMillis { it }
-        while (draft.voice is VoiceStatus.Recording) {
-            withFrameMillis { now ->
-                draft = draft.tickRecording(now - last)
-                last = now
+        if (recording) {
+            justRecorded = true
+            var last = withFrameMillis { it }
+            while (draft.voice is VoiceStatus.Recording) {
+                withFrameMillis { now ->
+                    draft = draft.tickRecording(now - last)
+                    last = now
+                }
             }
+        } else if (justRecorded) {
+            justRecorded = false
+            if (enrollment != null && draft.voice == VoiceStatus.Registered) uploadPending = true
         }
-        if (enrollment != null && draft.voice == VoiceStatus.Registered) uploadPending = true
     }
     LaunchedEffect(uploadPending) {
         if (!uploadPending || enrollment == null) return@LaunchedEffect

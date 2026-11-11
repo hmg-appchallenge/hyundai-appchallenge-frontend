@@ -132,7 +132,11 @@ fun RecordingRoute(
     var elapsedMillis by remember { mutableLongStateOf(0L) }
     val ticking = controller.phase == RecordingController.Phase.Recording && !controller.isPaused
     LaunchedEffect(ticking) {
-        if (!ticking) return@LaunchedEffect
+        if (!ticking) {
+            // 멈추면 실제로 녹음된 시간으로 맞춘다 (3분을 다 쓰면 02:59가 아니라 03:00)
+            elapsedMillis = controller.recordedMillis
+            return@LaunchedEffect
+        }
         var last = withFrameMillis { it }
         while (true) {
             withFrameMillis { now ->
@@ -152,6 +156,7 @@ fun RecordingRoute(
         family = family,
         snapshot = controller.snapshot(elapsedMillis),
         isPaused = controller.isPaused || !recording,
+        canResume = !controller.isAtLimit,
         statusNote = controller.warning,
         onBack = onBack,
         onComplete = {
@@ -227,6 +232,8 @@ fun RecordingScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
     onTogglePause: () -> Unit,
+    /** 녹음할 수 있는 시간이 남았는지. 다 쓰면 계속하기를 막고 완성하기만 남긴다. */
+    canResume: Boolean = true,
     statusNote: String? = null,
     overlay: @Composable BoxScope.() -> Unit = {},
 ) {
@@ -269,6 +276,7 @@ fun RecordingScreen(
             LargeButton(
                 text = if (isPaused) "계속하기" else "멈추기",
                 onClick = onTogglePause,
+                enabled = !isPaused || canResume,
                 icon = if (isPaused) R.drawable.ic_play else R.drawable.ic_pause,
                 variant = LargeButtonVariant.Secondary,
                 modifier = Modifier.width(599.dp),

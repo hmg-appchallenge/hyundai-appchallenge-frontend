@@ -172,7 +172,8 @@ class RecordingController(
             while (true) {
                 try {
                     val r = service.sendChunk(id, seq, pcm)
-                    warning = null
+                    // 연결 안내만 지운다 (3분을 다 썼다는 안내는 완성할 때까지 둔다)
+                    if (warning == CONNECTION_WARNING) warning = null
                     val now = System.currentTimeMillis()
                     val before = playingMemberIds
                     r.speaking.forEach { speakingUntil[it] = now + SPEAKING_HOLD_MS }
@@ -190,7 +191,7 @@ class RecordingController(
                         return
                     }
                     attempt++
-                    warning = "서버 연결이 불안정해요. 다시 보내는 중..."
+                    if (!isAtLimit) warning = CONNECTION_WARNING
                     if (attempt >= 3) break
                     delay(500L * attempt)
                 }
@@ -313,5 +314,6 @@ class RecordingController(
         const val MAX_BARS = 200
         const val SPEAKING_HOLD_MS = 2_600L
         const val DEFAULT_MAX_RECORDING_MS = 180_000L
+        const val CONNECTION_WARNING = "서버 연결이 불안정해요. 다시 보내는 중..."
     }
 }
