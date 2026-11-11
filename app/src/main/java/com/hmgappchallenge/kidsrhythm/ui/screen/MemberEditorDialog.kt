@@ -249,7 +249,7 @@ private fun BoxScope.DeleteMemberConfirm(onCancel: () -> Unit, onConfirm: () -> 
                     text = "취소",
                     onClick = onCancel,
                     icon = R.drawable.ic_close,
-                    variant = LargeButtonVariant.WarmSecondary,
+                    variant = LargeButtonVariant.Secondary,
                     modifier = Modifier.weight(1f),
                 )
                 LargeButton(

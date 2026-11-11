@@ -169,7 +169,7 @@ private fun SegmentedTabs(selected: AppTab, onSelect: (AppTab) -> Unit, modifier
                 Text(
                     text = tab.label,
                     style = AppTypography.TitleSmall,
-                    color = if (isSelected) AppColors.TextDarkPrimary else AppColors.TextDarkSecondary,
+                    color = if (isSelected) AppColors.TextDarkPrimary else AppColors.SegmentedUnselectedText,
                 )
             }
         }

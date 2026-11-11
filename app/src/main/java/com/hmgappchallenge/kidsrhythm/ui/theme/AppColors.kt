@@ -5,7 +5,8 @@ import androidx.compose.ui.graphics.Color
 /** 색상 토큰. */
 object AppColors {
     // Text
-    val TextDarkPrimary = Color(0xFF131417)
+    // 메인 블랙 (제목·주요 글자)
+    val TextDarkPrimary = AppPalette.WarmBlack1000
     val TextDarkSecondary = Color(0xD6131417)
     val TextDarkTertiary = Color(0xA3131417)
     val TextDarkQuaternary = Color(0x52131417)
@@ -24,7 +25,7 @@ object AppColors {
     val BasicStaticLight100 = Color(0xFFFFFFFF)
 
     // Icon
-    val IconDarkPrimary = Color(0xFF131417)
+    val IconDarkPrimary = AppPalette.WarmBlack1000
     val IconDarkSecondary = Color(0xD6131417)
     val IconDarkQuaternary = Color(0x52131417)
 
@@ -47,10 +48,17 @@ object AppColors {
     val StageBackground = Color(0xFFFFF4E9)
     val StageFloor = Color(0xFFFFE7CF)
     val SpeechBubbleShadow = Color(0xFFFFE5C2)
-    val TextWarm = Color(0xFF624B2B)
-    val TextWarmSecondary = Color(0xD6624B2B)
-    val SegmentedBackground = Color(0xFFE0E1E6)
-    val ButtonSwitchEnabled = Color(0xFFFFFFFF)
+    // 본문 (제목 아래 설명 글자)
+    val TextWarm = AppPalette.WarmBlack700
+    val TextWarmSecondary = AppPalette.WarmBlack700
+    // 만들기·보관함 탭
+    val SegmentedBackground = AppPalette.WarmGray200
+    val ButtonSwitchEnabled = AppPalette.WarmWhite100
+    val SegmentedUnselectedText = AppPalette.WarmBlack600
+
+    // 무대 위 말풍선·안내 칩
+    val StageBubbleBackground = AppPalette.WarmWhite100
+    val HintChipText = AppPalette.WarmBlack900
     val Dim = Color(0x66131417)
     val PlayheadLine = Color(0xFFC9C9C9)
     val PlayheadDot = Color(0xFFD9D9D9)
