@@ -11,8 +11,11 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 /**
  * AAOS Car API로 실제 속도, 바깥 온도, 주행 제한 상태를 받는다.
@@ -63,13 +66,22 @@ class CarVehicleSignals(
 
             override fun onErrorEvent(propertyId: Int, zone: Int) {}
         }
-        try {
-            if (props != null && granted(Car.PERMISSION_SPEED)) {
+        // 권한이 있을 때 한 번만 구독한다. 구독을 시도했으면 true (차에 그 값이 없어도 다시 시도하지 않는다)
+        var speedSubscribed = false
+        var temperatureSubscribed = false
+        fun subscribe() {
+            if (props == null) return
+            if (!speedSubscribed && granted(Car.PERMISSION_SPEED)) {
+                speedSubscribed = true
                 props.registerCallback(callback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
             }
-            if (props != null && granted(Car.PERMISSION_EXTERIOR_ENVIRONMENT)) {
+            if (!temperatureSubscribed && granted(Car.PERMISSION_EXTERIOR_ENVIRONMENT)) {
+                temperatureSubscribed = true
                 props.registerCallback(callback, VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE, CarPropertyManager.SENSOR_RATE_ONCHANGE)
             }
+        }
+        try {
+            subscribe()
             ux?.registerListener { r ->
                 restricted = r.isRequiresDistractionOptimization
                 emit()
@@ -78,6 +90,20 @@ class CarVehicleSignals(
             Log.w(TAG, "차량 신호를 구독할 수 없어요", e)
         }
         emit()
+        // 앱을 처음 켤 때 뜨는 권한 창에서 나중에 허용하면 그때 구독한다
+        if (props != null && (!speedSubscribed || !temperatureSubscribed)) {
+            launch {
+                while (isActive && (!speedSubscribed || !temperatureSubscribed)) {
+                    delay(PERMISSION_POLL_MS)
+                    try {
+                        subscribe()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "차량 신호를 구독할 수 없어요", e)
+                        break
+                    }
+                }
+            }
+        }
         awaitClose {
             try {
                 props?.unregisterCallback(callback)
@@ -90,5 +116,6 @@ class CarVehicleSignals(
 
     private companion object {
         const val TAG = "CarVehicleSignals"
+        const val PERMISSION_POLL_MS = 1_000L
     }
 }

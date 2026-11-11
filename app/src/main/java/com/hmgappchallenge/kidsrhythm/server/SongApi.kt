@@ -8,6 +8,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
@@ -24,6 +25,13 @@ object ServerConfig {
 
     const val CONNECT_TIMEOUT_MS = 5_000
     const val READ_TIMEOUT_MS = 20_000
+
+    /**
+     * 연결이 잠깐 끊겨도 바로 실패하지 않게 같은 요청을 다시 보낸다 (최대 횟수).
+     * 서버는 같은 조각(seq)·완성하기를 다시 받아도 한 번만 처리한다 (docs/API.md 3-2, 3-3).
+     */
+    const val NETWORK_ATTEMPTS = 3
+    const val RETRY_DELAY_MS = 300L
 }
 
 /** [SongService]의 HTTP 구현. 추가 라이브러리 없이 HttpURLConnection과 org.json만 쓴다. */
@@ -34,7 +42,21 @@ class SongApi(
 
     private class Reply(val code: Int, val body: ByteArray)
 
-    private fun call(method: String, path: String, body: ByteArray? = null, contentType: String? = null, readTimeoutMs: Int = ServerConfig.READ_TIMEOUT_MS): Reply {
+    /** 연결 오류면 [ServerConfig.NETWORK_ATTEMPTS]번까지 다시 보낸다. 서버가 준 오류(4xx·5xx)는 다시 보내지 않는다. */
+    private suspend fun call(method: String, path: String, body: ByteArray? = null, contentType: String? = null, readTimeoutMs: Int = ServerConfig.READ_TIMEOUT_MS): Reply {
+        var attempt = 0
+        while (true) {
+            try {
+                return callOnce(method, path, body, contentType, readTimeoutMs)
+            } catch (e: ServerException) {
+                attempt++
+                if (!e.isNetwork || attempt >= ServerConfig.NETWORK_ATTEMPTS) throw e
+                delay(ServerConfig.RETRY_DELAY_MS * attempt)
+            }
+        }
+    }
+
+    private fun callOnce(method: String, path: String, body: ByteArray?, contentType: String?, readTimeoutMs: Int): Reply {
         val conn = (URL(baseUrl.trimEnd('/') + path).openConnection() as HttpURLConnection)
         try {
             conn.requestMethod = method

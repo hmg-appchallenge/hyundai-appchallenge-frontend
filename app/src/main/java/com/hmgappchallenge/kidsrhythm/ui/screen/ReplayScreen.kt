@@ -48,8 +48,10 @@ fun ReplayRoute(services: AppServices, songId: Long, onBack: () -> Unit) {
     val player = services.player
     val scope = rememberCoroutineScope()
     var confirmDelete by remember { mutableStateOf(false) }
+    // 지우는 중에는 목록에서 곡이 사라져도 여기서 또 뒤로 가지 않는다 (지우기가 직접 한 번만 뒤로 간다)
+    var deleting by remember { mutableStateOf(false) }
     if (song == null) {
-        LaunchedEffect(Unit) { onBack() }
+        if (!deleting) LaunchedEffect(Unit) { onBack() }
         return
     }
     LaunchedEffect(song.id) {
@@ -68,10 +70,13 @@ fun ReplayRoute(services: AppServices, songId: Long, onBack: () -> Unit) {
                     message = "'${song.title}'을 지우면 다시 들을 수 없어요.",
                     primaryText = "지우기",
                     onPrimary = {
-                        player.release()
-                        scope.launch {
-                            services.archive.delete(song.id)
-                            onBack()
+                        if (!deleting) {
+                            deleting = true
+                            player.release()
+                            scope.launch {
+                                services.archive.delete(song.id)
+                                onBack()
+                            }
                         }
                     },
                     secondaryText = "취소",

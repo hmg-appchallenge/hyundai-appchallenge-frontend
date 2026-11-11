@@ -65,7 +65,8 @@ fun CompletedRoute(
     onChangeFriend: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val song = services.completedSong
+    // 처음 들어올 때의 곡을 붙잡아 둔다. 저장하면서 completedSong을 비워도 이 화면이 '곡 없음'으로 홈에 돌아가지 않게
+    val song = remember { services.completedSong }
     if (song == null) {
         LaunchedEffect(Unit) { onBack() }
         return
