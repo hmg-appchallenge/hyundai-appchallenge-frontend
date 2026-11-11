@@ -55,6 +55,13 @@ object AppColors {
     val PlayheadLine = Color(0xFFC9C9C9)
     val PlayheadDot = Color(0xFFD9D9D9)
 
+    // 목소리 카드 (연주 중 / 대기)
+    val VoiceCardName = AppPalette.WarmBlack1000
+    val VoiceCardInstrument = AppPalette.WarmBlack500
+    val VoiceCardWaitingName = AppPalette.WarmGray800
+    val VoiceCardWaiting = AppPalette.WarmGray500
+    val VoiceCardStatusText = AppPalette.WarmWhite100
+
     // 악기별 (픽토그램 / 배경)
     val DrumPictogram = Color(0xFFFF438E)
     val DrumBackground = Color(0xFFFFEAF3)
