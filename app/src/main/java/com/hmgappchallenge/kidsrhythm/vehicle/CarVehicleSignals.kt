@@ -58,7 +58,11 @@ class CarVehicleSignals(
             override fun onChangeEvent(value: CarPropertyValue<*>) {
                 val v = value.value as? Float ?: return
                 when (value.propertyId) {
-                    VehiclePropertyIds.PERF_VEHICLE_SPEED -> speed = abs(v) * 3.6f
+                    VehiclePropertyIds.PERF_VEHICLE_SPEED -> {
+                        val kmh = abs(v) * 3.6f
+                        if (abs(kmh - speed) >= 1f) Log.d(TAG, "속도 $kmh km/h")
+                        speed = kmh
+                    }
                     VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE -> temperature = v
                 }
                 emit()
@@ -73,11 +77,14 @@ class CarVehicleSignals(
             if (props == null) return
             if (!speedSubscribed && granted(Car.PERMISSION_SPEED)) {
                 speedSubscribed = true
-                props.registerCallback(callback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
+                val ok = props.registerCallback(callback, VehiclePropertyIds.PERF_VEHICLE_SPEED, CarPropertyManager.SENSOR_RATE_NORMAL)
+                Log.i(TAG, "속도 구독: $ok")
             }
             if (!temperatureSubscribed && granted(Car.PERMISSION_EXTERIOR_ENVIRONMENT)) {
                 temperatureSubscribed = true
-                props.registerCallback(callback, VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE, CarPropertyManager.SENSOR_RATE_ONCHANGE)
+                // 바깥 온도는 계속 바뀌는 값이라 ONCHANGE(0)가 아니라 기본 빈도로 구독한다
+                val ok = props.registerCallback(callback, VehiclePropertyIds.ENV_OUTSIDE_TEMPERATURE, CarPropertyManager.SENSOR_RATE_NORMAL)
+                Log.i(TAG, "바깥 온도 구독: $ok")
             }
         }
         try {
