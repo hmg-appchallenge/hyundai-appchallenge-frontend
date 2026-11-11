@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -70,12 +71,13 @@ private val CharacterWidth = 566.dp
 /** 이웃한 캐릭터의 가운데끼리 거리. */
 private val CharacterSpacing = 310.dp
 
-/** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도. */
-private val SideCharacterBlur = 10.dp
+/** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도와 불투명도. */
+private val SideCharacterBlur = 4.dp
+private const val SIDE_CHARACTER_ALPHA = 0.4f
 
-/** 캐릭터가 한 자리에 머무는 시간과 옆으로 밀리는 시간. TODO(디자인): 애니메이션 설명이 오면 맞춘다 */
-private const val CAROUSEL_HOLD_MILLIS = 1_500L
-private const val CAROUSEL_SLIDE_MILLIS = 600
+/** 캐릭터가 한 자리에 머무는 시간과 왼쪽으로 한 칸 밀리는 시간. 차량 화면이라 시선이 덜 흔들리게 천천히 바꾼다. */
+private const val CAROUSEL_HOLD_MILLIS = 3_500L
+private const val CAROUSEL_SLIDE_MILLIS = 450
 
 /** 처음 가운데에 서는 캐릭터. */
 private val FirstCenterCharacter = MascotCharacter.CAT
@@ -207,6 +209,7 @@ private fun BoxScope.CharacterCarousel() {
                 .padding(top = CharacterTop)
                 .offset(x = CharacterSpacing * slot)
                 .width(CharacterWidth)
+                .alpha(1f - (1f - SIDE_CHARACTER_ALPHA) * distance)
                 .blur(SideCharacterBlur * distance),
         )
     }
