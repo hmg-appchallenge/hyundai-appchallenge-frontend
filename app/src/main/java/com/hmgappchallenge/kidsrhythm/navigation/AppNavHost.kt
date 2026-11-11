@@ -2,6 +2,7 @@ package com.hmgappchallenge.kidsrhythm.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +20,9 @@ import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
+import com.hmgappchallenge.kidsrhythm.family.memberDeletedMessage
 import com.hmgappchallenge.kidsrhythm.server.SongGenerator
+import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedScreen
@@ -32,6 +35,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
+import kotlinx.coroutines.delay
 
 private object Route {
     const val HOME = "s01_home"
@@ -152,6 +156,13 @@ fun AppNavHost(
             val members by familyRepository.members.collectAsState()
             val vehicle by vehicleSignals.state.collectAsState(initial = null)
             var editor by remember { mutableStateOf<MemberEditorMode?>(null) }
+            var toast by remember { mutableStateOf<String?>(null) }
+            LaunchedEffect(toast) {
+                if (toast != null) {
+                    delay(TOAST_MILLIS)
+                    toast = null
+                }
+            }
             VoiceSettingsScreen(
                 members = members,
                 onBack = { navController.popBackStack() },
@@ -182,9 +193,11 @@ fun AppNavHost(
                             onDelete = { member ->
                                 familyRepository.delete(member.id)
                                 editor = null
+                                toast = memberDeletedMessage(member.name)
                             },
                         )
                     }
+                    toast?.let { Toast(it) }
                 },
             )
         }
@@ -193,6 +206,9 @@ fun AppNavHost(
         }
     }
 }
+
+/** 토스트를 보여 주는 시간. */
+private const val TOAST_MILLIS = 3_000L
 
 private fun NavHostController.popBackToHome() {
     popBackStack(Route.HOME, inclusive = false)
