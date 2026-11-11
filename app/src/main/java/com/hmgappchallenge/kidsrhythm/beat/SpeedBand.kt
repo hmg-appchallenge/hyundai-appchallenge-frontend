@@ -2,7 +2,7 @@ package com.hmgappchallenge.kidsrhythm.beat
 
 /**
  * 속도 구간 이름. [bpmForSpeed]와 같은 경계를 쓴다.
- * TODO(기획): 구간 이름과 비트 수 기준이 정해지면 바꾼다. 시안은 42 km/h를 "고속 · 4비트"로 적었다
+ * 피그마 스피드 칩 메모: 0 / 1~30 / 31~70 / 71+ km/h → 2 / 4 / 8 / 16비트.
  */
 fun speedBandLabel(speedKmh: Float): String = when {
     speedKmh <= 0f -> "정차"
@@ -11,5 +11,18 @@ fun speedBandLabel(speedKmh: Float): String = when {
     else -> "고속"
 }
 
-/** 비트 수. 기준이 없어 시안 값으로 고정한다. */
-const val BEATS_PER_BAR = 4
+/** 속도 구간의 비트 (2·4·8·16비트). 리듬을 얼마나 잘게 쪼개는지이고, 박자는 항상 4/4다. */
+fun beatTypeForSpeed(speedKmh: Float): Int = when {
+    speedKmh <= 0f -> 2
+    speedKmh <= 30f -> 4
+    speedKmh <= 70f -> 8
+    else -> 16
+}
+
+/** BPM으로 비트를 고른다 (서버에 보낼 때 S03과 같은 값을 쓰려고). */
+fun beatTypeForBpm(bpm: Int): Int = when {
+    bpm <= 80 -> 2
+    bpm <= 95 -> 4
+    bpm <= 110 -> 8
+    else -> 16
+}

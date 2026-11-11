@@ -40,6 +40,8 @@ fun LargeButton(
     @DrawableRes icon: Int? = null,
     variant: LargeButtonVariant = LargeButtonVariant.Primary,
     textStyle: TextStyle = AppTypography.TitleSmall,
+    /** 지우기처럼 되돌릴 수 없는 일. Primary를 빨간 바탕으로 그린다 (삭제 팝업 시안). */
+    destructive: Boolean = false,
 ) {
     val primary = variant == LargeButtonVariant.Primary
     val contentColor = if (primary) AppColors.BasicStaticLight100 else AppColors.TextDarkPrimary
@@ -48,7 +50,7 @@ fun LargeButton(
             .height(100.dp)
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(ButtonShape)
-            .background(if (primary) AppColors.BrandOrange else AppColors.BasicAlphaLight50)
+            .background(if (primary && destructive) AppColors.InformativeNegative else if (primary) AppColors.BrandOrange else AppColors.BasicAlphaLight50)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 40.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),

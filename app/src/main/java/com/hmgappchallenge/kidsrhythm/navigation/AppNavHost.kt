@@ -2,6 +2,7 @@ package com.hmgappchallenge.kidsrhythm.navigation
 
 import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,16 +14,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.hmgappchallenge.kidsrhythm.archive.SongArchive
+import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
+import com.hmgappchallenge.kidsrhythm.audio.VoiceEnrollment
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
-import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
-import com.hmgappchallenge.kidsrhythm.server.SongGenerator
-import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
-import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedRoute
+import com.hmgappchallenge.kidsrhythm.ui.screen.FriendPickerScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
@@ -30,48 +31,57 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.MemberEditorDialog
 import com.hmgappchallenge.kidsrhythm.ui.screen.MemberEditorMode
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecentSong
 import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
+import com.hmgappchallenge.kidsrhythm.ui.screen.ReplayRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
-import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
+import com.hmgappchallenge.kidsrhythm.vehicle.VehicleState
 
 private object Route {
     const val HOME = "s01_home"
     const val INTRO = "s02_intro"
     const val BASE_BEAT = "s03_base_beat"
     const val RECORDING = "s04_recording"
+    const val ARG_SONG = "songId"
     const val ARG_WORD = "word"
-    const val GENERATING = "s05_generating?$ARG_WORD={$ARG_WORD}"
+    const val GENERATING = "s05_generating/{$ARG_SONG}?$ARG_WORD={$ARG_WORD}"
 
-    fun generating(word: String?): String =
-        if (word.isNullOrBlank()) "s05_generating" else "s05_generating?$ARG_WORD=${Uri.encode(word)}"
+    fun generating(songId: String, word: String?): String =
+        if (word.isNullOrBlank()) "s05_generating/$songId" else "s05_generating/$songId?$ARG_WORD=${Uri.encode(word)}"
     const val COMPLETED = "s06_completed"
+    const val FRIEND = "s06_1_friend"
     const val ARCHIVE = "s07_archive"
+    const val ARG_ID = "id"
+    const val REPLAY = "s07_1_replay/{$ARG_ID}"
+
+    fun replay(id: Long) = "s07_1_replay/$id"
     const val VOICE_SETTINGS = "s02_1_voice_settings"
 }
 
+/** S02 시작 음성 안내 (기획서 S02 문구). */
+private const val INTRO_GUIDE = "음악 한번 만들어볼까?"
+
 /** 기획서 08번 화면 흐름(S01~S07). S00 동의 팝업은 홈 위에 뜬다. */
 @Composable
-fun AppNavHost(
-    songGenerator: SongGenerator,
-    songArchive: SongArchive,
-    consentStore: ConsentStore,
-    vehicleSignals: VehicleSignals,
-    familyRepository: FamilyRepository,
-) {
+fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
     val navController = rememberNavController()
     // "나중에"로 닫은 상태가 다른 화면에 다녀와도 유지되도록 화면 밖에서 들고 있는다
     val consentGate = remember(consentStore) { ConsentGate(consentStore) }
+    val vehicle by services.vehicle.state.collectAsState(initial = null)
+    val family by services.family.members.collectAsState()
 
     NavHost(navController = navController, startDestination = Route.HOME) {
         composable(Route.HOME) {
-            val songs by songArchive.songs.collectAsState(initial = emptyList())
+            val songs by services.archive.songs.collectAsState()
             val latest = songs.maxByOrNull { it.createdAtMillis }
+            LaunchedEffect(Unit) {
+                services.beatPlayer.stop()
+                services.player.pause()
+            }
             HomeScreen(
                 recentSong = latest?.let { RecentSong(it.title, songMetaLabel(it, System.currentTimeMillis())) },
                 isConsentVisible = consentGate.isDialogVisible,
                 onStart = { if (consentGate.requestStart()) navController.navigate(Route.INTRO) },
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
-                // 플레이어를 구현하면 연결한다
-                onPlayRecent = {},
+                onPlayRecent = { latest?.let { navController.navigate(Route.replay(it.id)) } },
                 // 흐름도: 동의하면 가족 목소리 등록(S02-1)으로 이어진다
                 onAgreeConsent = {
                     consentGate.agree()
@@ -81,13 +91,18 @@ fun AppNavHost(
             )
         }
         composable(Route.INTRO) {
+            // 스피커로 시작 안내를 들려준다 (S02 "음악 한번 만들어볼까?")
+            LaunchedEffect(Unit) { services.voiceGuide.speak(INTRO_GUIDE) }
             IntroScreen(
                 onFinished = {
                     navController.navigate(Route.BASE_BEAT) {
                         popUpTo(Route.INTRO) { inclusive = true }
                     }
                 },
-                onCancel = { navController.popBackToHome() },
+                onCancel = {
+                    services.voiceGuide.stop()
+                    navController.popBackToHome()
+                },
                 onOpenArchive = {
                     navController.navigate(Route.ARCHIVE) {
                         popUpTo(Route.HOME)
@@ -96,10 +111,11 @@ fun AppNavHost(
             )
         }
         composable(Route.BASE_BEAT) {
-            val vehicle by vehicleSignals.state.collectAsState(initial = null)
-            val family by familyRepository.members.collectAsState()
+            val speed = vehicle?.speedKmh ?: 0f
+            // 차가 만드는 비트를 바로 들려준다. 속도 구간이 바뀌면 비트도 바뀐다
+            LaunchedEffect(speed) { services.beatPlayer.playForSpeed(speed) }
             BaseBeatScreen(
-                speedKmh = vehicle?.speedKmh ?: 0f,
+                speedKmh = speed,
                 family = family,
                 onBack = { navController.popBackStack() },
                 onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
@@ -107,16 +123,23 @@ fun AppNavHost(
             )
         }
         composable(Route.RECORDING) {
-            val family by familyRepository.members.collectAsState()
             RecordingRoute(
                 family = family,
+                services = services,
+                speedKmh = vehicle?.speedKmh ?: 0f,
+                outsideTemperature = vehicle?.outsideTemperatureCelsius,
                 onBack = { navController.popBackStack() },
-                onComplete = { word -> navController.navigate(Route.generating(word)) },
+                onComplete = { songId, word ->
+                    navController.navigate(Route.generating(songId, word)) {
+                        popUpTo(Route.BASE_BEAT)
+                    }
+                },
             )
         }
         composable(
             route = Route.GENERATING,
             arguments = listOf(
+                navArgument(Route.ARG_SONG) { type = NavType.StringType },
                 navArgument(Route.ARG_WORD) {
                     type = NavType.StringType
                     nullable = true
@@ -124,7 +147,8 @@ fun AppNavHost(
             ),
         ) { entry ->
             GeneratingRoute(
-                songGenerator = songGenerator,
+                services = services,
+                songId = entry.arguments?.getString(Route.ARG_SONG).orEmpty(),
                 word = entry.arguments?.getString(Route.ARG_WORD),
                 onBack = { navController.popBackStack() },
                 onGenerated = {
@@ -132,11 +156,18 @@ fun AppNavHost(
                         popUpTo(Route.HOME)
                     }
                 },
+                onRetry = {
+                    navController.navigate(Route.RECORDING) {
+                        popUpTo(Route.BASE_BEAT)
+                    }
+                },
             )
         }
         composable(Route.COMPLETED) {
-            CompletedScreen(
-                onSave = {
+            CompletedRoute(
+                services = services,
+                family = family,
+                onSaved = {
                     navController.navigate(Route.ARCHIVE) {
                         popUpTo(Route.HOME)
                     }
@@ -146,14 +177,25 @@ fun AppNavHost(
                         popUpTo(Route.HOME)
                     }
                 },
+                onChangeFriend = { navController.navigate(Route.FRIEND) },
+                onBack = { navController.popBackToHome() },
+            )
+        }
+        composable(Route.FRIEND) {
+            FriendPickerScreen(
+                current = services.friend,
+                onDecide = {
+                    services.chooseFriend(it)
+                    navController.popBackStack()
+                },
+                onCancel = { navController.popBackStack() },
             )
         }
         composable(Route.VOICE_SETTINGS) {
-            val members by familyRepository.members.collectAsState()
-            val vehicle by vehicleSignals.state.collectAsState(initial = null)
             var editor by remember { mutableStateOf<MemberEditorMode?>(null) }
+            val enrollment = remember { VoiceEnrollment(services.newRecorder(), services.songService) }
             VoiceSettingsScreen(
-                members = members,
+                members = family,
                 onBack = { navController.popBackStack() },
                 onEdit = { editor = MemberEditorMode.Edit(it) },
                 onAdd = { editor = MemberEditorMode.Add },
@@ -164,35 +206,55 @@ fun AppNavHost(
                     editor?.let { mode ->
                         MemberEditorDialog(
                             mode = mode,
-                            members = members,
+                            members = family,
                             // 이름 입력은 정차 중에만 할 수 있다
-                            nameEditable = vehicle?.isUxRestricted != true,
+                            nameEditable = vehicle.isStopped(),
                             onDismiss = { editor = null },
                             onSubmit = { draft ->
                                 val instrument = requireNotNull(draft.instrument)
                                 val hasVoice = draft.voice == VoiceStatus.Registered
+                                val embedding = if (hasVoice) draft.embedding else null
                                 when (mode) {
-                                    MemberEditorMode.Add -> familyRepository.add(draft.name, instrument, hasVoice)
-                                    is MemberEditorMode.Edit -> familyRepository.update(
-                                        mode.member.copy(name = draft.name, instrument = instrument, hasVoice = hasVoice),
+                                    MemberEditorMode.Add -> services.family.add(draft.name, instrument, hasVoice, embedding)
+                                    is MemberEditorMode.Edit -> services.family.update(
+                                        mode.member.copy(name = draft.name, instrument = instrument, hasVoice = hasVoice, voiceEmbedding = embedding),
                                     )
                                 }
                                 editor = null
                             },
                             onDelete = { member ->
-                                familyRepository.delete(member.id)
+                                services.family.delete(member.id)
                                 editor = null
                             },
+                            enrollment = enrollment,
+                            onPreviewInstrument = services.sounds::preview,
                         )
                     }
                 },
             )
         }
         composable(Route.ARCHIVE) {
-            ArchiveScreen(onOpenMake = { navController.popBackToHome() })
+            ArchiveRoute(
+                services = services,
+                onOpenMake = { navController.popBackToHome() },
+                onOpenSong = { navController.navigate(Route.replay(it)) },
+            )
+        }
+        composable(
+            route = Route.REPLAY,
+            arguments = listOf(navArgument(Route.ARG_ID) { type = NavType.LongType }),
+        ) { entry ->
+            ReplayRoute(
+                services = services,
+                songId = entry.arguments?.getLong(Route.ARG_ID) ?: 0L,
+                onBack = { navController.popBackStack() },
+            )
         }
     }
 }
+
+/** 주행 제한이 없을 때(정차 중)만 이름을 입력할 수 있다. */
+private fun VehicleState?.isStopped(): Boolean = this?.isUxRestricted != true
 
 private fun NavHostController.popBackToHome() {
     popBackStack(Route.HOME, inclusive = false)

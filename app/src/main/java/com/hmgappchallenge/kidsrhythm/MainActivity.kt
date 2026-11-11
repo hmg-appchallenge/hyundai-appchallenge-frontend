@@ -1,36 +1,39 @@
 package com.hmgappchallenge.kidsrhythm
 
+import android.Manifest
+import android.car.Car
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.remember
-import com.hmgappchallenge.kidsrhythm.archive.FakeSongArchive
+import androidx.core.content.ContextCompat
 import com.hmgappchallenge.kidsrhythm.consent.SharedPreferencesConsentStore
-import com.hmgappchallenge.kidsrhythm.family.InMemoryFamilyRepository
 import com.hmgappchallenge.kidsrhythm.navigation.AppNavHost
-import com.hmgappchallenge.kidsrhythm.server.FakeSongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTheme
-import com.hmgappchallenge.kidsrhythm.vehicle.FakeVehicleSignals
 
 class MainActivity : ComponentActivity() {
+    private val services by lazy { AppServices(applicationContext) }
+
+    private val permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // 녹음(마이크)과 차량 속도(비트)는 처음 한 번 묻는다. 거절해도 앱은 열리고, 녹음 화면에서 다시 묻는다
+        val missing = listOf(Manifest.permission.RECORD_AUDIO, Car.PERMISSION_SPEED)
+            .filter { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }
+        if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
         setContent {
             AppTheme {
-                // AI 서버 API, 보관함 저장소, 차량 신호가 정해지면 실제 구현으로 교체한다.
-                val songGenerator = remember { FakeSongGenerator() }
-                val songArchive = remember { FakeSongArchive() }
                 val consentStore = remember { SharedPreferencesConsentStore(applicationContext) }
-                val vehicleSignals = remember { FakeVehicleSignals() }
-                val familyRepository = remember { InMemoryFamilyRepository() }
-                AppNavHost(
-                    songGenerator = songGenerator,
-                    songArchive = songArchive,
-                    consentStore = consentStore,
-                    vehicleSignals = vehicleSignals,
-                    familyRepository = familyRepository,
-                )
+                AppNavHost(services = services, consentStore = consentStore)
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (isFinishing) services.release()
+        super.onDestroy()
     }
 }

@@ -19,6 +19,8 @@ data class MemberDraft(
     val name: String = "",
     val instrument: Instrument? = null,
     val voice: VoiceStatus = VoiceStatus.None,
+    /** 서버에서 받은 목소리 특징. 등록 녹음을 다시 하면 바뀐다. */
+    val embedding: List<Float>? = null,
 ) {
     /** 이름과 악기가 있으면 저장할 수 있다. 목소리는 나중에 등록해도 된다. */
     val canSubmit: Boolean get() = name.isNotBlank() && instrument != null
@@ -39,6 +41,7 @@ data class MemberDraft(
             name = member.name,
             instrument = member.instrument,
             voice = if (member.hasVoice) VoiceStatus.Registered else VoiceStatus.None,
+            embedding = member.voiceEmbedding,
         )
     }
 }

@@ -39,7 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmgappchallenge.kidsrhythm.R
-import com.hmgappchallenge.kidsrhythm.beat.BEATS_PER_BAR
+import com.hmgappchallenge.kidsrhythm.beat.beatTypeForSpeed
 import com.hmgappchallenge.kidsrhythm.beat.bpmForSpeed
 import com.hmgappchallenge.kidsrhythm.beat.speedBandLabel
 import com.hmgappchallenge.kidsrhythm.family.FakeFamily
@@ -83,7 +83,7 @@ fun BaseBeatScreen(
             BeatStage(
                 bpm = bpm,
                 speedLabel = "속도 ${speedKmh.toInt()} km/h",
-                bandLabel = "${speedBandLabel(speedKmh)} · ${BEATS_PER_BAR}비트",
+                bandLabel = "${speedBandLabel(speedKmh)} · ${beatTypeForSpeed(speedKmh)}비트",
                 modifier = Modifier.weight(1f),
             )
             Column(

@@ -109,6 +109,23 @@ fun AppPage(
     }
 }
 
+/** 만들기/보관함 탭만 있고 본문은 창 너비를 다 쓰는 화면 (S07 보관함). */
+@Composable
+fun TabPage(
+    selectedTab: AppTab,
+    onSelectTab: (AppTab) -> Unit,
+    modifier: Modifier = Modifier,
+    overlay: @Composable BoxScope.() -> Unit = {},
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    AppWindow(
+        header = { SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight()) },
+        modifier = modifier,
+        overlay = overlay,
+        content = content,
+    )
+}
+
 /** 뒤로 버튼과 제목이 있는 하위 화면. 본문은 창 너비를 다 쓴다. */
 @Composable
 fun SubPage(

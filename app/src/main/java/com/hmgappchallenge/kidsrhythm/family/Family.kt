@@ -9,10 +9,11 @@ data class FamilyMember(
     val instrument: Instrument,
     /** 목소리를 녹음해 두었는지. 나중에 등록해도 된다. */
     val hasVoice: Boolean = true,
+    /** 서버가 계산해 준 목소리 특징. 기기에만 저장하고, 녹음할 때마다 서버에 같이 보낸다 (docs/API.md 2번). */
+    val voiceEmbedding: List<Float>? = null,
 )
 
-/** 가족 목소리 등록(S02-1)이 생기기 전까지 쓰는 가족. */
-// TODO(가족 목소리): S02-1에서 등록한 가족과 악기로 바꾼다
+/** 미리보기(@Preview)와 테스트에서 쓰는 가족. 앱은 S02-1에서 등록한 가족([PrefsFamilyRepository])을 쓴다. */
 object FakeFamily {
     val members = listOf(
         FamilyMember(1, "엄마", Instrument.DRUM),
