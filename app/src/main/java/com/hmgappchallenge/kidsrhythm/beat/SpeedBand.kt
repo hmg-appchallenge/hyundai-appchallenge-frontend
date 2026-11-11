@@ -1,15 +1,22 @@
 package com.hmgappchallenge.kidsrhythm.beat
 
 /**
- * 속도 구간 이름. [bpmForSpeed]와 같은 경계를 쓴다.
- * TODO(기획): 구간 이름과 비트 수 기준이 정해지면 바꾼다. 시안은 42 km/h를 "고속 · 4비트"로 적었다
+ * 속도 구간. [bpmForSpeed]와 같은 경계(0 / 1~30 / 31~70 / 71+ km/h)를 쓴다.
+ * [apiCode]는 노래 생성 요청의 speedZone 값이다.
  */
-fun speedBandLabel(speedKmh: Float): String = when {
-    speedKmh <= 0f -> "정차"
-    speedKmh <= 30f -> "저속"
-    speedKmh <= 70f -> "중속"
-    else -> "고속"
+enum class SpeedZone(val label: String, val beats: Int, val apiCode: String) {
+    STOP("정차", 2, "stop"),
+    ALLEY("골목", 4, "alley"),
+    CITY("시내", 8, "city"),
+    HIGHWAY("고속", 16, "highway"),
 }
 
-/** 비트 수. 기준이 없어 시안 값으로 고정한다. */
-const val BEATS_PER_BAR = 4
+fun speedZoneFor(speedKmh: Float): SpeedZone = when {
+    speedKmh <= 0f -> SpeedZone.STOP
+    speedKmh <= 30f -> SpeedZone.ALLEY
+    speedKmh <= 70f -> SpeedZone.CITY
+    else -> SpeedZone.HIGHWAY
+}
+
+/** 속도 구간 칩 글자. 예: "시내 · 8비트" */
+fun speedZoneLabel(speedKmh: Float): String = speedZoneFor(speedKmh).let { "${it.label} · ${it.beats}비트" }

@@ -62,6 +62,10 @@ object AppColors {
     val TextWarmBody = AppPalette.WarmGray900
     val ButtonWarmSecondary = AppPalette.WarmGray200
 
+    // 속도 칩 (S03)
+    val SpeedChipMuted = AppPalette.WarmGray200
+    val SpeedChipMutedText = AppPalette.WarmBlack800
+
     // 토스트
     val ToastBackground = Color(0xFF44464E)
 
