@@ -100,4 +100,18 @@ object AppColors {
     val BellBackground = Color(0xFFFEEDEB)
     val XylophoneBackground = Color(0xFFF2EAFD)
     val PianoBackground = Color(0xFFDCE0FF)
+
+    // 목소리 설정 칸 (S02-1)
+    val SlotBackground = AppPalette.WarmGray100
+    val SlotBorder = AppPalette.WarmGray200
+    val SlotEmptyDash = AppPalette.WarmGray300
+    val SlotEmptyName = AppPalette.WarmBlack600
+    val SlotEmptyLabel = AppPalette.WarmGray700
+    val VoiceRegisteredText = AppPalette.WarmBlack500
+
+    // 이름 입력칸 (S02-2)
+    val FieldCounter = AppPalette.WarmBlack400
+    val FieldLockedBackground = AppPalette.WarmGray200
+    val FieldLockedBorder = AppPalette.WarmGray400
+    val FieldLockedText = AppPalette.WarmGray600
 }

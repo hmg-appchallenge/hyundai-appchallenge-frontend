@@ -54,6 +54,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmgappchallenge.kidsrhythm.R
@@ -133,7 +134,7 @@ fun BoxScope.MemberEditorDialog(
     val editingId = (mode as? MemberEditorMode.Edit)?.member?.id
     val taken = remember(members, editingId) { takenInstruments(members, editingId) }
 
-    PopupOverlay(topPadding = 42.dp) {
+    PopupOverlay(topPadding = 29.dp, background = AppColors.PopupWarmBackground) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
                 Text("새 멤버 추가", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
@@ -175,7 +176,7 @@ fun BoxScope.MemberEditorDialog(
                             modifier = Modifier.weight(1f),
                         )
                         LargeButton(
-                            text = "취소",
+                            text = "나중에",
                             onClick = onDismiss,
                             icon = R.drawable.ic_close,
                             variant = LargeButtonVariant.Secondary,
@@ -273,7 +274,8 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val active = enabled && focused
-    val borderWidth = if (active) FIELD_BORDER else FIELD_IDLE_BORDER
+    // 주행 중 잠금도 입력 중처럼 두꺼운 테두리다
+    val borderWidth = if (active || !enabled) FIELD_BORDER else FIELD_IDLE_BORDER
     BasicTextField(
         value = name,
         onValueChange = onNameChange,
@@ -281,7 +283,7 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
         singleLine = true,
         interactionSource = interactionSource,
         textStyle = AppTypography.TitleMediumNormal.copy(color = AppColors.TextDarkPrimary),
-        cursorBrush = SolidColor(AppColors.IconDarkPrimary),
+        cursorBrush = SolidColor(AppColors.BrandOrange),
         modifier = modifier
             .fillMaxWidth()
             .height(100.dp),
@@ -291,21 +293,33 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
                     .fillMaxWidth()
                     .fillMaxHeight()
                     .clip(FieldShape)
-                    .background(if (enabled) AppColors.FieldBackground else AppColors.BasicGrayscale100)
+                    .background(if (enabled) AppColors.FieldBackground else AppColors.FieldLockedBackground)
                     // 팝업 바탕도 흰색이라 쉬는 상태에도 옅은 테두리로 칸을 보인다
-                    .border(borderWidth, if (active) AppColors.FieldFocused else AppColors.BasicAlphaLight100, FieldShape)
+                    .border(borderWidth, fieldBorderColor(enabled, active), FieldShape)
                     .padding(horizontal = 32.dp + borderWidth),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    if (name.isEmpty()) {
-                        Text("이름을 입력해 주세요", style = AppTypography.TitleMediumNormal, color = AppColors.TextDarkTertiary, maxLines = 1)
+                    if (!enabled) {
+                        Text(
+                            "주행 중이라 이름을 입력할 수 없어요. 정차 후 다시 시도해 주세요.",
+                            style = AppTypography.TitleMediumNormal,
+                            color = AppColors.FieldLockedText,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    } else {
+                        if (name.isEmpty()) {
+                            Text("이름을 입력해 주세요", style = AppTypography.TitleMediumNormal, color = AppColors.TextDarkTertiary, maxLines = 1)
+                        }
+                        innerTextField()
                     }
-                    innerTextField()
                 }
-                if (name.isNotEmpty()) {
-                    Text("${name.length} / $MAX_NAME_LENGTH", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+                if (!enabled) {
+                    Image(painterResource(R.drawable.ic_lock), contentDescription = "주행 중 잠김", modifier = Modifier.size(44.dp))
+                } else if (name.isNotEmpty()) {
+                    Text("${name.length} / $MAX_NAME_LENGTH", style = AppTypography.LabelMedium, color = AppColors.FieldCounter)
                 }
                 // 지우기 버튼은 입력하는 동안에만 보인다
                 if (active && name.isNotEmpty()) {
@@ -323,6 +337,13 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
     )
 }
 
+/** 이름칸 테두리: 주행 중 잠금은 회색, 입력 중은 주황, 쉬는 상태는 옅은 테두리. */
+private fun fieldBorderColor(enabled: Boolean, active: Boolean) = when {
+    !enabled -> AppColors.FieldLockedBorder
+    active -> AppColors.BrandOrange
+    else -> AppColors.BasicAlphaLight100
+}
+
 @Composable
 private fun VoicePrompt(voice: VoiceStatus, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
     Column(
@@ -330,7 +351,7 @@ private fun VoicePrompt(voice: VoiceStatus, onStartRecording: () -> Unit, modifi
             .fillMaxWidth()
             .height(253.dp)
             .clip(PromptShape)
-            .background(AppColors.BasicAlphaLight50),
+            .background(AppColors.ButtonWarmSecondary),
         verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -365,14 +386,14 @@ private fun PromptChip(text: String, onClick: () -> Unit) {
         modifier = Modifier
             .height(71.7.dp)
             .clip(RoundedCornerShape(17.92.dp))
-            .background(AppColors.SurfaceBasic)
+            .background(AppColors.StageBubbleBackground)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 26.89.dp),
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(painterResource(R.drawable.ic_mic), contentDescription = null, tint = AppColors.IconDarkPrimary, modifier = Modifier.size(38.dp))
-        Text(text, style = PromptChipTextStyle, color = AppColors.TextDarkSecondary)
+        Text(text, style = PromptChipTextStyle, color = AppColors.TextWarm)
     }
 }
 
@@ -382,7 +403,7 @@ private fun ListeningChip(remainingSeconds: Int) {
         modifier = Modifier
             .height(47.82.dp)
             .clip(RoundedCornerShape(11.95.dp))
-            .background(AppColors.SurfaceBasic)
+            .background(AppColors.StageBubbleBackground)
             .padding(horizontal = 17.93.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -392,7 +413,7 @@ private fun ListeningChip(remainingSeconds: Int) {
                 .size(20.dp)
                 .background(AppColors.InformativeNegative, CircleShape),
         )
-        Text("듣는 중 · ${remainingSeconds}초 남았어요", style = ListeningChipTextStyle, color = AppColors.TextDarkSecondary)
+        Text("듣는 중 · ${remainingSeconds}초 남았어요", style = ListeningChipTextStyle, color = AppColors.TextWarm)
     }
 }
 
@@ -492,7 +513,7 @@ private fun CategoryChip(label: String, selected: Boolean, onClick: () -> Unit) 
         modifier = Modifier
             .height(64.dp)
             .clip(CategoryChipShape)
-            .background(if (selected) AppColors.SurfaceBasic else AppColors.BasicAlphaLight50)
+            .background(if (selected) AppColors.PopupWarmBackground else AppColors.ButtonWarmSecondary)
             .then(if (selected) Modifier.border(CARD_BORDER, AppColors.BrandOrange, CategoryChipShape) else Modifier)
             .clickable(role = Role.Tab, onClick = onClick)
             .padding(horizontal = 24.dp + CARD_BORDER),
@@ -510,8 +531,8 @@ private fun InstrumentCard(instrument: Instrument, isSelected: Boolean, takenBy:
             .width(200.dp)
             .alpha(if (takenBy != null) TAKEN_ALPHA else 1f)
             .clip(CardShape)
-            .background(AppColors.SurfaceBasic)
-            .border(border, if (isSelected) AppColors.BrandOrange else AppColors.BasicAlphaLight100, CardShape)
+            .background(AppColors.PopupWarmBackground)
+            .border(border, if (isSelected) AppColors.BrandOrange else AppColors.PopupWarmBorder, CardShape)
             .clickable(enabled = takenBy == null, role = Role.RadioButton, onClick = onClick),
     ) {
         Column(
