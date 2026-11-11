@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.hmgappchallenge.kidsrhythm.archive.SongArchive
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
+import com.hmgappchallenge.kidsrhythm.character.CharacterStore
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
@@ -25,6 +26,7 @@ import com.hmgappchallenge.kidsrhythm.server.SongGenerator
 import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.CharacterPickerScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
@@ -50,6 +52,7 @@ private object Route {
     const val COMPLETED = "s06_completed"
     const val ARCHIVE = "s07_archive"
     const val VOICE_SETTINGS = "s02_1_voice_settings"
+    const val CHARACTER_PICKER = "s01_1_character_picker"
 }
 
 /** 기획서 08번 화면 흐름(S01~S07). S00 동의 팝업은 홈 위에 뜬다. */
@@ -60,20 +63,28 @@ fun AppNavHost(
     consentStore: ConsentStore,
     vehicleSignals: VehicleSignals,
     familyRepository: FamilyRepository,
+    characterStore: CharacterStore,
 ) {
     val navController = rememberNavController()
     // "나중에"로 닫은 상태가 다른 화면에 다녀와도 유지되도록 화면 밖에서 들고 있는다
     val consentGate = remember(consentStore) { ConsentGate(consentStore) }
+    // 같이 놀 친구. 홈과 친구 고르기가 함께 본다
+    var character by remember(characterStore) { mutableStateOf(characterStore.selected) }
 
     NavHost(navController = navController, startDestination = Route.HOME) {
         composable(Route.HOME) {
             val songs by songArchive.songs.collectAsState(initial = emptyList())
             val latest = songs.maxByOrNull { it.createdAtMillis }
             HomeScreen(
+                character = character,
                 recentSong = latest?.let { RecentSong(it.title, songMetaLabel(it, System.currentTimeMillis())) },
                 isConsentVisible = consentGate.isDialogVisible,
                 onStart = { if (consentGate.requestStart()) navController.navigate(Route.INTRO) },
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
+                onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
+                onOpenCharacterPicker = { navController.navigate(Route.CHARACTER_PICKER) },
+                // TODO(기획): 설정(S08) 화면을 만들면 연결한다
+                onOpenSettings = {},
                 // 플레이어를 구현하면 연결한다
                 onPlayRecent = {},
                 // 흐름도: 동의하면 가족 목소리 등록(S02-1)으로 이어진다
@@ -199,6 +210,17 @@ fun AppNavHost(
                     }
                     toast?.let { Toast(it) }
                 },
+            )
+        }
+        composable(Route.CHARACTER_PICKER) {
+            CharacterPickerScreen(
+                current = character,
+                onConfirm = {
+                    characterStore.select(it)
+                    character = it
+                    navController.popBackStack()
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Route.ARCHIVE) {

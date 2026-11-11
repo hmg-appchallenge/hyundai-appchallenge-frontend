@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.remember
 import com.hmgappchallenge.kidsrhythm.archive.FakeSongArchive
+import com.hmgappchallenge.kidsrhythm.character.SharedPreferencesCharacterStore
 import com.hmgappchallenge.kidsrhythm.consent.SharedPreferencesConsentStore
 import com.hmgappchallenge.kidsrhythm.family.InMemoryFamilyRepository
 import com.hmgappchallenge.kidsrhythm.navigation.AppNavHost
@@ -23,12 +24,14 @@ class MainActivity : ComponentActivity() {
                 val consentStore = remember { SharedPreferencesConsentStore(applicationContext) }
                 val vehicleSignals = remember { FakeVehicleSignals() }
                 val familyRepository = remember { InMemoryFamilyRepository() }
+                val characterStore = remember { SharedPreferencesCharacterStore(applicationContext) }
                 AppNavHost(
                     songGenerator = songGenerator,
                     songArchive = songArchive,
                     consentStore = consentStore,
                     vehicleSignals = vehicleSignals,
                     familyRepository = familyRepository,
+                    characterStore = characterStore,
                 )
             }
         }

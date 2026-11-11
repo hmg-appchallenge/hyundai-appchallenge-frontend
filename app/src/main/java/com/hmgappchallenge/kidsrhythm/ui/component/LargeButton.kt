@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,6 +68,26 @@ fun LargeButton(
             Icon(painter = painterResource(icon), contentDescription = null, tint = contentColor, modifier = Modifier.size(52.dp))
         }
         Text(text = text, style = textStyle, color = contentColor, maxLines = 1)
+    }
+}
+
+/** 아이콘만 있는 100×100 회색 버튼 (홈 설정 버튼 등). */
+@Composable
+fun IconSquareButton(
+    @DrawableRes icon: Int,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier
+            .size(100.dp)
+            .clip(ButtonShape)
+            .background(AppColors.ButtonWarmSecondary)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painter = painterResource(icon), contentDescription = contentDescription, tint = AppColors.TextWarmStrong, modifier = Modifier.size(52.dp))
     }
 }
 

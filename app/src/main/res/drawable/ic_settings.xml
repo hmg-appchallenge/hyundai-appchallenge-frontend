@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 톱니 가운데 구멍은 시안에서 흰 원으로 덮었지만, 아이콘 색을 바꿀 수 있도록 원을 빼서 구멍으로 둔다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="VectorPath"
+    android:width="52dp"
+    android:height="52dp"
+    android:viewportWidth="52"
+    android:viewportHeight="52">
+    <path
+        android:fillColor="#181310"
+        android:fillType="evenOdd"
+        android:pathData="M22.3167 4.33333H29.6833L30.7667 9.96667C32.2419 10.5682 33.6272 11.3701 34.8833 12.35L40.3 10.4L43.9833 16.9L39.65 20.5833C39.8695 22.1646 39.8695 23.7687 39.65 25.35L43.9833 29.0333L40.3 35.5333L34.8833 33.5833C33.6272 34.5632 32.2419 35.3652 30.7667 35.9667L29.6833 41.6H22.3167L21.2333 35.9667C19.7581 35.3652 18.3728 34.5632 17.1167 33.5833L11.7 35.5333L8.01667 29.0333L12.35 25.35C12.1305 23.7687 12.1305 22.1646 12.35 20.5833L8.01667 16.9L11.7 10.4L17.1167 12.35C18.3728 11.3701 19.7581 10.5682 21.2333 9.96667L22.3167 4.33333Z M18,23.5 a8.5,8.5 0 1,0 17,0 a8.5,8.5 0 1,0 -17,0 Z" />
+</vector>

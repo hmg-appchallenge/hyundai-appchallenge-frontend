@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -80,10 +82,21 @@ fun AppPage(
     stage: @Composable BoxScope.() -> Unit,
     panel: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier,
+    headerActions: @Composable RowScope.() -> Unit = {},
     overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     AppWindow(
-        header = { SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight()) },
+        header = {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight())
+                Spacer(Modifier.weight(1f))
+                headerActions()
+            }
+        },
         modifier = modifier,
         overlay = overlay,
     ) {
