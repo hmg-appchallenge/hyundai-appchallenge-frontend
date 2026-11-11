@@ -47,7 +47,7 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .dropShadow(AppColors.SpeechBubbleShadow, 6.dp, 24.dp, BubbleRadius)
                 .clip(BubbleShape)
-                .background(AppColors.SurfaceBasic)
+                .background(AppColors.StageBubbleBackground)
                 .padding(horizontal = 36.dp, vertical = 22.dp),
         ) {
             Text(text = text, style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, textAlign = TextAlign.Center)
@@ -86,7 +86,7 @@ fun HintChip(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .clip(CircleShape)
-            .background(AppColors.SurfaceBasic)
+            .background(AppColors.StageBubbleBackground)
             .padding(start = 24.dp, end = 32.dp, top = 16.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -97,7 +97,7 @@ fun HintChip(text: String, modifier: Modifier = Modifier) {
             tint = AppColors.BrandOrange,
             modifier = Modifier.size(40.dp),
         )
-        Text(text = text, style = HintTextStyle, color = AppColors.TextDarkSecondary, maxLines = 1)
+        Text(text = text, style = HintTextStyle, color = AppColors.HintChipText, maxLines = 1)
     }
 }
 

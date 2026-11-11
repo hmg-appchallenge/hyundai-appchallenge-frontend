@@ -86,7 +86,7 @@ fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
             )
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 LargeButton(
-                    text = "동의하고 시작",
+                    text = "동의하고 시작하기",
                     onClick = onAgree,
                     icon = R.drawable.ic_check,
                     textStyle = AppTypography.TitleSmallExtraStrong,
