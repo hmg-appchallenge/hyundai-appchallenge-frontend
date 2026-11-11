@@ -70,10 +70,15 @@ class PcmRecorder(private val context: Context) {
         thread = null
     }
 
+    /**
+     * 디버그 빌드에서 마이크 대신 쓸 wav. 앱 내부 폴더(adb shell run-as로 넣음)를 먼저 보고, 없으면 외부 앱 폴더를 본다.
+     * AAOS는 운전자가 사용자 10 같은 다른 사용자라 adb push로는 외부 앱 폴더에 못 넣을 때가 있다.
+     */
     private fun debugInput(): File? {
         val debuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         if (!debuggable) return null
-        return context.getExternalFilesDir(null)?.let { File(it, DEBUG_FILE) }?.takeIf { it.exists() }
+        val candidates = listOfNotNull(context.filesDir, context.getExternalFilesDir(null))
+        return candidates.map { File(it, DEBUG_FILE) }.firstOrNull { it.exists() }
     }
 
     @SuppressLint("MissingPermission") // start()에서 권한을 확인한다

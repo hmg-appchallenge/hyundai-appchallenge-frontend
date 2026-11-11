@@ -27,16 +27,24 @@
 
 - 서버 실행 방법은 AI·백엔드 담당이 따로 안내해요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
 - 에뮬레이터에서 PC 마이크를 쓰려면 에뮬레이터를 `-allow-host-audio` 옵션으로 켜요.
-- 사람 목소리 없이 시험하려면 16kHz 모노 16비트 wav를 `debug_mic.wav`라는 이름으로 넣어요. 디버그 빌드는 마이크 대신 이 파일을 실제 시간처럼 흘려보내요.
+- 사람 목소리 없이 시험하려면 16kHz 모노 16비트 wav를 앱 내부 폴더에 `debug_mic.wav`라는 이름으로 넣어요. 디버그 빌드는 마이크 대신 이 파일을 실제 시간처럼 흘려보내요. AAOS 에뮬레이터는 운전자가 사용자 10이라 `run-as`로 넣어요 (`adb shell am get-current-user`로 번호 확인).
 
 ```bash
-adb push debug_mic.wav /sdcard/Android/data/com.hmgappchallenge.kidsrhythm/files/debug_mic.wav
+adb push debug_mic.wav /data/local/tmp/
+adb shell "cat /data/local/tmp/debug_mic.wav | run-as com.hmgappchallenge.kidsrhythm --user 10 sh -c 'cat > files/debug_mic.wav'"
 ```
 
 - 차량 속도는 에뮬레이터의 차량 데이터 화면이나 adb로 바꿔요 (값은 m/s, 11.67 = 42 km/h).
 
 ```bash
 adb shell cmd car_service inject-vhal-event 0x11600207 11.67
+```
+
+- 에뮬레이터는 adb로 넣은 속도가 다음 측정 때 0으로 돌아가요. 시험·데모에서 속도를 고정하려면 디버그 빌드 앱 내부 폴더에 `debug_speed.txt`(숫자, km/h)를 넣어요. 1초마다 읽고, 파일을 지우면 다시 차량 값을 써요.
+
+```bash
+adb shell "echo 42 | run-as com.hmgappchallenge.kidsrhythm --user 10 sh -c 'cat > files/debug_speed.txt'"
+adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 rm files/debug_speed.txt
 ```
 
 ## 테스트 환경 및 설정

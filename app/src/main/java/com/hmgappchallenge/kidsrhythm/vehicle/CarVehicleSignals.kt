@@ -6,14 +6,21 @@ import android.car.drivingstate.CarUxRestrictionsManager
 import android.car.hardware.CarPropertyValue
 import android.car.hardware.property.CarPropertyManager
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import java.io.File
 import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -30,9 +37,27 @@ class CarVehicleSignals(
     private fun granted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
+    /**
+     * 디버그 빌드 전용: 앱 내부 폴더의 debug_speed.txt(숫자, km/h)가 있으면 그 속도를 쓴다.
+     * 에뮬레이터는 adb로 넣은 속도가 다음 측정 때 0으로 돌아가서, 데모·시험 때 속도를 고정하려고 둔다.
+     */
+    private val debugSpeedFile: File? =
+        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) File(context.filesDir, DEBUG_SPEED_FILE) else null
+
+    private fun debugSpeed(file: File): Flow<Float?> = flow {
+        while (true) {
+            emit(if (file.exists()) file.readText().trim().toFloatOrNull()?.coerceIn(0f, 250f) else null)
+            delay(DEBUG_SPEED_POLL_MS)
+        }
+    }.distinctUntilChanged().flowOn(Dispatchers.IO)
+
+    override val state: Flow<VehicleState> = debugSpeedFile?.let { file ->
+        combine(carState(), debugSpeed(file)) { car, forced -> if (forced != null) car.copy(speedKmh = forced) else car }
+    } ?: carState()
+
     // registerCallback(callback, id, rate)는 API 35에서 지원 중단 표시가 붙었지만, 대체 API(subscribePropertyEvents)는 API 35부터라 targetSdk 34에서는 이것을 쓴다
     @Suppress("DEPRECATION")
-    override val state: Flow<VehicleState> = callbackFlow {
+    private fun carState(): Flow<VehicleState> = callbackFlow {
         val car = try {
             if (context.packageManager.hasSystemFeature(PackageManager.FEATURE_AUTOMOTIVE)) Car.createCar(context) else null
         } catch (e: Throwable) {
@@ -124,5 +149,7 @@ class CarVehicleSignals(
     private companion object {
         const val TAG = "CarVehicleSignals"
         const val PERMISSION_POLL_MS = 1_000L
+        const val DEBUG_SPEED_FILE = "debug_speed.txt"
+        const val DEBUG_SPEED_POLL_MS = 1_000L
     }
 }
