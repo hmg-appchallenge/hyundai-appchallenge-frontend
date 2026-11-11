@@ -150,7 +150,9 @@ fun RecordingRoute(
     LaunchedEffect(controller.phase) {
         if (controller.phase == RecordingController.Phase.Connecting) elapsedMillis = 0L
     }
-    val completeWith: (String?) -> Unit = { songId -> if (songId != null) onComplete(songId, controller.heardWords.firstOrNull()) }
+    val completeWith: (String?) -> Unit = { songId ->
+        if (songId != null) onComplete(songId, controller.firstNoun ?: controller.heardWords.firstOrNull())
+    }
     val recording = controller.phase == RecordingController.Phase.Recording
     RecordingScreen(
         family = family,

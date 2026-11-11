@@ -224,8 +224,8 @@ fun GeneratingScreen(word: String?, doneCount: Int, onBack: () -> Unit, overlay:
             ) {
                 LoadingSpinner(size = 120.dp, contentDescription = null)
                 Text(
-                    // 시안은 "보통 5~20초"인데, 에뮬레이터와 서버를 같이 돌리는 노트북에서는 35~50초 걸려서 고쳤다 (docs/API.md 열린 질문 5)
-                    text = "보통 1분 안에 완성돼요",
+                    // 시안은 "보통 5~20초"인데, 에뮬레이터와 서버를 같이 돌리는 노트북에서는 30~65초 걸려서 고쳤다 (docs/API.md 확인 필요 5)
+                    text = "보통 1분쯤 걸려요",
                     style = AppTypography.LabelMedium,
                     color = AppColors.TextDarkTertiary,
                     modifier = Modifier.padding(start = 12.dp, top = 18.dp),

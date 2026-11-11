@@ -53,6 +53,10 @@ class RecordingController(
     var warning by mutableStateOf<String?>(null)
         private set
 
+    /** 처음 들린 명사 (의성어 말고). 서버도 명사로 노래 제목을 지어서 S05 "○○ 노래를 만들고 있어요"에 쓴다. */
+    var firstNoun: String? = null
+        private set
+
     private var members: List<FamilyMember> = emptyList()
     private var sessionId: String? = null
     private var seq = 0
@@ -141,6 +145,7 @@ class RecordingController(
         speedSamples.clear()
         outsideTemp = null
         heardWords.clear()
+        firstNoun = null
         levelHeights.clear()
         recordedMillis = 0L
         maxRecordingMillis = DEFAULT_MAX_RECORDING_MS
@@ -179,7 +184,10 @@ class RecordingController(
                     r.speaking.forEach { speakingUntil[it] = now + SPEAKING_HOLD_MS }
                     refreshSpeaking(now)
                     (playingMemberIds - before).forEach { mid -> members.firstOrNull { it.id == mid }?.let { sounds?.hit(it.instrument) } }
-                    r.newWords.forEach { w -> if (w.text !in heardWords) heardWords.add(w.text) }
+                    r.newWords.forEach { w ->
+                        if (w.text !in heardWords) heardWords.add(w.text)
+                        if (firstNoun == null && w.kind == "word") firstNoun = w.text
+                    }
                     break
                 } catch (e: ServerException) {
                     if (e.code == "TOO_LONG") {
