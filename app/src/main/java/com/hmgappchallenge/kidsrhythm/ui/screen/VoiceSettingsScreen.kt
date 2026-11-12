@@ -72,9 +72,9 @@ fun VoiceSettingsScreen(
 ) {
     SubPage(title = "목소리 설정", onBack = onBack, overlay = overlay) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("목소리 등록 후", style = LeadTitleStyle, color = AppColors.TextDarkPrimary)
+            Text("가족 멤버 설정", style = LeadTitleStyle, color = AppColors.TextDarkPrimary)
             Text(
-                "가족을 추가할 때 이름을 입력하고 목소리를 녹음한 뒤, 사용할 악기를 선택해요.\n" +
+                "멤버를 추가할 때 이름을 입력하고 목소리를 녹음한 뒤, 사용할 악기를 선택해요.\n" +
                     "등록한 가족 정보는 언제든지 ‘수정’에서 이름, 목소리, 악기를 변경할 수 있어요.",
                 style = AppTypography.BodyMedium,
                 color = AppColors.TextWarmSecondary,
@@ -127,8 +127,8 @@ private fun RowScope.MemberSlot(member: FamilyMember, onEdit: () -> Unit) {
         borderWidth = BORDER_WIDTH,
         modifier = Modifier
             .clip(SlotShape)
-            .background(AppColors.SurfaceBasic)
-            .border(BORDER_WIDTH, AppColors.BasicAlphaLight50, SlotShape),
+            .background(AppColors.SlotBackground)
+            .border(BORDER_WIDTH, AppColors.SlotBorder, SlotShape),
     ) {
         InstrumentBadge(member.instrument)
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -136,7 +136,7 @@ private fun RowScope.MemberSlot(member: FamilyMember, onEdit: () -> Unit) {
             Row(
                 modifier = Modifier
                     .clip(PillShape)
-                    .background(AppColors.BasicAlphaLight50)
+                    .background(AppColors.ButtonWarmSecondary)
                     .padding(start = 12.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -144,7 +144,7 @@ private fun RowScope.MemberSlot(member: FamilyMember, onEdit: () -> Unit) {
                 InstrumentPictogram(member.instrument, size = 22.dp)
                 Text(member.instrument.label, style = PillTextStyle, color = AppColors.TextDarkPrimary)
             }
-            Text(if (member.hasVoice) "목소리 등록됨" else "목소리 등록 전", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+            Text(if (member.hasVoice) "목소리 등록됨" else "목소리 등록 전", style = AppTypography.LabelMedium, color = AppColors.VoiceRegisteredText)
         }
         LargeButton(
             text = "수정",
@@ -162,11 +162,11 @@ private fun RowScope.EmptySlot(onAdd: () -> Unit) {
         Box(
             Modifier
                 .size(120.dp)
-                .background(AppColors.BasicGrayscale100, CircleShape),
+                .background(AppColors.ButtonWarmSecondary, CircleShape),
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("멤버 추가", style = AppTypography.TitleLargeExtraStrong, color = AppColors.TextDarkPrimary)
-            Text("이름 · 목소리 · 악기", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+            Text("멤버 추가", style = AppTypography.TitleLargeExtraStrong, color = AppColors.SlotEmptyName)
+            Text("이름 · 목소리 · 악기", style = AppTypography.LabelMedium, color = AppColors.SlotEmptyLabel)
         }
         // 흰 바탕에 테두리가 있는 버튼이라 LargeButton과 모양이 달라 여기서 그린다
         Row(
@@ -174,8 +174,8 @@ private fun RowScope.EmptySlot(onAdd: () -> Unit) {
                 .width(248.dp)
                 .height(100.dp)
                 .clip(SlotShape)
-                .background(AppColors.BackgroundSecondary)
-                .border(BORDER_WIDTH, AppColors.ButtonBasicDisabled, SlotShape)
+                .background(AppColors.PopupWarmBackground)
+                .border(BORDER_WIDTH, AppColors.SlotBorder, SlotShape)
                 .clickable(role = Role.Button, onClick = onAdd),
             horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
             verticalAlignment = Alignment.CenterVertically,
@@ -207,7 +207,7 @@ private fun Modifier.dashedBorder(): Modifier = drawBehind {
     val stroke = DASH_WIDTH.toPx()
     val inset = stroke / 2
     drawRoundRect(
-        color = AppColors.BasicAlphaLight200,
+        color = AppColors.SlotEmptyDash,
         topLeft = Offset(inset, inset),
         size = Size(size.width - stroke, size.height - stroke),
         cornerRadius = CornerRadius(SlotRadius.toPx() - inset),

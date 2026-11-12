@@ -40,8 +40,12 @@ class InstrumentSounds(context: Context) {
             Instrument.BELL -> R.raw.inst_bell_hit
             Instrument.UKULELE -> R.raw.inst_ukulele_hit
             Instrument.STEELDRUM -> R.raw.inst_steeldrum_hit
+            Instrument.WOODBLOCK -> R.raw.inst_woodblock_hit
             Instrument.GUITAR -> R.raw.inst_guitar_hit
+            Instrument.HARP -> R.raw.inst_harp_hit
             Instrument.XYLOPHONE -> R.raw.inst_xylophone_hit
+            Instrument.PIANO -> R.raw.inst_piano_hit
+            Instrument.MARACAS -> R.raw.inst_maracas_hit
         }
 
         fun previewRes(i: Instrument): Int = when (i) {
@@ -51,8 +55,12 @@ class InstrumentSounds(context: Context) {
             Instrument.BELL -> R.raw.inst_bell_preview
             Instrument.UKULELE -> R.raw.inst_ukulele_preview
             Instrument.STEELDRUM -> R.raw.inst_steeldrum_preview
+            Instrument.WOODBLOCK -> R.raw.inst_woodblock_preview
             Instrument.GUITAR -> R.raw.inst_guitar_preview
+            Instrument.HARP -> R.raw.inst_harp_preview
             Instrument.XYLOPHONE -> R.raw.inst_xylophone_preview
+            Instrument.PIANO -> R.raw.inst_piano_preview
+            Instrument.MARACAS -> R.raw.inst_maracas_preview
         }
     }
 }

@@ -15,6 +15,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,7 +49,7 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .dropShadow(AppColors.SpeechBubbleShadow, 6.dp, 24.dp, BubbleRadius)
                 .clip(BubbleShape)
-                .background(AppColors.SurfaceBasic)
+                .background(AppColors.StageBubbleBackground)
                 .padding(horizontal = 36.dp, vertical = 22.dp),
         ) {
             Text(text = text, style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, textAlign = TextAlign.Center)
@@ -86,7 +88,7 @@ fun HintChip(text: String, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .clip(CircleShape)
-            .background(AppColors.SurfaceBasic)
+            .background(AppColors.StageBubbleBackground)
             .padding(start = 24.dp, end = 32.dp, top = 16.dp, bottom = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -97,7 +99,7 @@ fun HintChip(text: String, modifier: Modifier = Modifier) {
             tint = AppColors.BrandOrange,
             modifier = Modifier.size(40.dp),
         )
-        Text(text = text, style = HintTextStyle, color = AppColors.TextDarkSecondary, maxLines = 1)
+        Text(text = text, style = HintTextStyle, color = AppColors.HintChipText, maxLines = 1)
     }
 }
 
@@ -111,4 +113,21 @@ private fun StagePartsPreview() {
         SpeechBubble("안녕! 우리 함께 노래를 만들어볼까?")
         HintChip("노래를 완성하면 친구가 나와서 춤춰요")
     }
+}
+
+/** 서 있는 친구가 스테이지 바닥에 서는 높이와 위쪽 위치. 여백 없는 이미지를 같은 높이로 맞춘다. */
+private val StandingCharacterHeight = 442.dp
+private val StandingCharacterTop = 287.dp
+
+/** 홈(S01)과 친구 고르기(S01-1) 스테이지 가운데에 서서 손을 흔드는 친구. */
+@Composable
+fun BoxScope.StandingCharacter(character: MascotCharacter, modifier: Modifier = Modifier) {
+    Mascot(
+        character = character,
+        pose = MascotPose.Standing,
+        modifier = modifier
+            .align(Alignment.TopCenter)
+            .padding(top = StandingCharacterTop)
+            .height(StandingCharacterHeight),
+    )
 }

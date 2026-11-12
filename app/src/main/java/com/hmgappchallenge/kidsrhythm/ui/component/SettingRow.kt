@@ -53,7 +53,7 @@ fun SettingRow(
             .height(151.dp)
             .clip(RowShape)
             .background(AppColors.BasicStaticLight100)
-            .border(BORDER_WIDTH, AppColors.BasicAlphaLight100, RowShape)
+            .border(BORDER_WIDTH, AppColors.PopupWarmBorder, RowShape)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = 37.dp + BORDER_WIDTH),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,7 +77,7 @@ fun SettingRow(
             }
             Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
                 Text(title, style = AppTypography.TitleSmall, color = AppColors.TextDarkPrimary)
-                Text(subtitle, style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+                Text(subtitle, style = AppTypography.LabelMedium, color = AppColors.TextWarmBody)
             }
         }
         Image(painterResource(R.drawable.ic_chevron_right), contentDescription = null)

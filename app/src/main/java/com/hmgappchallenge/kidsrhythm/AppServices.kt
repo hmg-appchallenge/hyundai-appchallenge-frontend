@@ -10,12 +10,13 @@ import com.hmgappchallenge.kidsrhythm.audio.InstrumentSounds
 import com.hmgappchallenge.kidsrhythm.audio.PcmRecorder
 import com.hmgappchallenge.kidsrhythm.audio.SongPlayer
 import com.hmgappchallenge.kidsrhythm.audio.VoiceGuide
+import com.hmgappchallenge.kidsrhythm.character.CharacterStore
+import com.hmgappchallenge.kidsrhythm.character.SharedPreferencesCharacterStore
 import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
 import com.hmgappchallenge.kidsrhythm.family.PrefsFamilyRepository
 import com.hmgappchallenge.kidsrhythm.server.SongApi
 import com.hmgappchallenge.kidsrhythm.server.SongResult
 import com.hmgappchallenge.kidsrhythm.server.SongService
-import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.vehicle.CarVehicleSignals
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
 import java.io.File
@@ -30,11 +31,13 @@ data class CompletedSong(val songId: String, val result: SongResult, val audioFi
 /** 앱 전체에서 같이 쓰는 것들. Activity가 하나라 여기서 만들고 정리한다. */
 class AppServices(context: Context) {
     private val appContext = context.applicationContext
-    private val prefs = appContext.getSharedPreferences("app", Context.MODE_PRIVATE)
 
     val songService: SongService = SongApi()
     val archive = FileSongArchive(File(appContext.filesDir, "songs"))
     val family: FamilyRepository = PrefsFamilyRepository(appContext)
+
+    /** 같이 놀 친구 (S01-1 친구 고르기). 홈과 S06 완성에 나온다. */
+    val characterStore: CharacterStore = SharedPreferencesCharacterStore(appContext)
     val vehicle: VehicleSignals = CarVehicleSignals(appContext)
     val beatPlayer = BeatPlayer(appContext)
     val sounds = InstrumentSounds(appContext)
@@ -48,17 +51,6 @@ class AppServices(context: Context) {
 
     var completedSong: CompletedSong? by mutableStateOf(null)
 
-    /** 노래가 완성되면 나와서 춤추는 친구 (S06, "같이 놀 친구 고르기"). */
-    var friend: MascotCharacter by mutableStateOf(
-        MascotCharacter.entries.firstOrNull { it.name == prefs.getString(KEY_FRIEND, null) } ?: MascotCharacter.CAT,
-    )
-        private set
-
-    fun chooseFriend(character: MascotCharacter) {
-        friend = character
-        prefs.edit().putString(KEY_FRIEND, character.name).apply()
-    }
-
     fun newRecorder() = PcmRecorder(appContext)
 
     /** 받아 둔 완성곡 mp3 자리. 보관함에 저장하면 앱 저장 공간으로 옮긴다. */
@@ -70,9 +62,5 @@ class AppServices(context: Context) {
         sounds.release()
         voiceGuide.release()
         appScope.cancel()
-    }
-
-    private companion object {
-        const val KEY_FRIEND = "friend"
     }
 }

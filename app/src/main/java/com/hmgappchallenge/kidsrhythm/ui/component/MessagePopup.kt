@@ -45,8 +45,7 @@ fun BoxScope.MessagePopup(
                     text = primaryText,
                     onClick = onPrimary,
                     icon = primaryIcon,
-                    variant = LargeButtonVariant.Primary,
-                    destructive = destructive,
+                    variant = if (destructive) LargeButtonVariant.Destructive else LargeButtonVariant.Primary,
                     modifier = Modifier.weight(1f),
                 )
             }

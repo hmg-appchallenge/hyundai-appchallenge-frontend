@@ -24,7 +24,7 @@ class ConsentGateTest {
     }
 
     @Test
-    fun `동의하고 시작을 누르면 동의가 저장되고 팝업이 닫힌다`() {
+    fun `동의하고 시작하기를 누르면 동의가 저장되고 팝업이 닫힌다`() {
         val store = MemoryConsentStore()
         val gate = ConsentGate(store)
         gate.agree()

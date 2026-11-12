@@ -46,10 +46,4 @@ class SongPartsTest {
         assertEquals("Pleos가", "Pleos".josa("이", "가"))
         assertEquals("", "".josa("이", "가"))
     }
-
-    @Test
-    fun `친구 이름은 모두 다르다`() {
-        val names = MascotCharacter.entries.map { it.friendName }
-        assertEquals(names.size, names.toSet().size)
-    }
 }

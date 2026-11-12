@@ -20,10 +20,12 @@ import com.hmgappchallenge.kidsrhythm.audio.VoiceEnrollment
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
+import com.hmgappchallenge.kidsrhythm.family.memberDeletedMessage
+import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.screen.ArchiveRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.BaseBeatScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.CharacterPickerScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.CompletedRoute
-import com.hmgappchallenge.kidsrhythm.ui.screen.FriendPickerScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.GeneratingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.HomeScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.IntroScreen
@@ -34,6 +36,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.ReplayRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleState
+import kotlinx.coroutines.delay
 
 private object Route {
     const val HOME = "s01_home"
@@ -47,13 +50,13 @@ private object Route {
     fun generating(songId: String, word: String?): String =
         if (word.isNullOrBlank()) "s05_generating/$songId" else "s05_generating/$songId?$ARG_WORD=${Uri.encode(word)}"
     const val COMPLETED = "s06_completed"
-    const val FRIEND = "s06_1_friend"
     const val ARCHIVE = "s07_archive"
     const val ARG_ID = "id"
     const val REPLAY = "s07_1_replay/{$ARG_ID}"
 
     fun replay(id: Long) = "s07_1_replay/$id"
     const val VOICE_SETTINGS = "s02_1_voice_settings"
+    const val CHARACTER_PICKER = "s01_1_character_picker"
 }
 
 /** S02 시작 음성 안내 (기획서 S02 문구). */
@@ -67,6 +70,8 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
     val consentGate = remember(consentStore) { ConsentGate(consentStore) }
     val vehicle by services.vehicle.state.collectAsState(initial = null)
     val family by services.family.members.collectAsState()
+    // 같이 놀 친구. 홈, 친구 고르기, S06 완성이 함께 본다
+    var character by remember { mutableStateOf(services.characterStore.selected) }
 
     NavHost(navController = navController, startDestination = Route.HOME) {
         composable(Route.HOME) {
@@ -77,10 +82,15 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 services.player.pause()
             }
             HomeScreen(
+                character = character,
                 recentSong = latest?.let { RecentSong(it.title, songMetaLabel(it, System.currentTimeMillis())) },
                 isConsentVisible = consentGate.isDialogVisible,
                 onStart = { if (consentGate.requestStart()) navController.navigate(Route.INTRO) },
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
+                onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
+                onOpenCharacterPicker = { navController.navigate(Route.CHARACTER_PICKER) },
+                // TODO(기획): 설정(S08) 화면을 만들면 연결한다
+                onOpenSettings = {},
                 onPlayRecent = { latest?.let { navController.navigate(Route.replay(it.id)) } },
                 // 흐름도: 동의하면 가족 목소리 등록(S02-1)으로 이어진다
                 onAgreeConsent = {
@@ -167,6 +177,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             CompletedRoute(
                 services = services,
                 family = family,
+                friend = character,
                 onSaved = {
                     navController.navigate(Route.ARCHIVE) {
                         popUpTo(Route.HOME)
@@ -177,23 +188,21 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                         popUpTo(Route.HOME)
                     }
                 },
-                onChangeFriend = { navController.navigate(Route.FRIEND) },
+                // S06-1 친구 바꾸기는 홈의 친구 고르기(S01-1)와 같은 화면을 쓴다
+                onChangeFriend = { navController.navigate(Route.CHARACTER_PICKER) },
                 onBack = { navController.popBackToHome() },
-            )
-        }
-        composable(Route.FRIEND) {
-            FriendPickerScreen(
-                current = services.friend,
-                onDecide = {
-                    services.chooseFriend(it)
-                    navController.popBackStack()
-                },
-                onCancel = { navController.popBackStack() },
             )
         }
         composable(Route.VOICE_SETTINGS) {
             var editor by remember { mutableStateOf<MemberEditorMode?>(null) }
             val enrollment = remember { VoiceEnrollment(services.newRecorder(), services.songService) }
+            var toast by remember { mutableStateOf<String?>(null) }
+            LaunchedEffect(toast) {
+                if (toast != null) {
+                    delay(TOAST_MILLIS)
+                    toast = null
+                }
+            }
             VoiceSettingsScreen(
                 members = family,
                 onBack = { navController.popBackStack() },
@@ -225,12 +234,25 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                             onDelete = { member ->
                                 services.family.delete(member.id)
                                 editor = null
+                                toast = memberDeletedMessage(member.name)
                             },
                             enrollment = enrollment,
                             onPreviewInstrument = services.sounds::preview,
                         )
                     }
+                    toast?.let { Toast(it) }
                 },
+            )
+        }
+        composable(Route.CHARACTER_PICKER) {
+            CharacterPickerScreen(
+                current = character,
+                onConfirm = {
+                    services.characterStore.select(it)
+                    character = it
+                    navController.popBackStack()
+                },
+                onBack = { navController.popBackStack() },
             )
         }
         composable(Route.ARCHIVE) {
@@ -255,6 +277,9 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
 
 /** 주행 제한이 없을 때(정차 중)만 이름을 입력할 수 있다. */
 private fun VehicleState?.isStopped(): Boolean = this?.isUxRestricted != true
+
+/** 토스트를 보여 주는 시간. */
+private const val TOAST_MILLIS = 3_000L
 
 private fun NavHostController.popBackToHome() {
     popBackStack(Route.HOME, inclusive = false)

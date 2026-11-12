@@ -45,7 +45,6 @@ import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
 import com.hmgappchallenge.kidsrhythm.ui.component.SpeechBubble
 import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
-import com.hmgappchallenge.kidsrhythm.ui.component.friendName
 import com.hmgappchallenge.kidsrhythm.ui.component.josa
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
@@ -60,6 +59,7 @@ private val ChipShape = RoundedCornerShape(24.dp)
 fun CompletedRoute(
     services: AppServices,
     family: List<FamilyMember>,
+    friend: MascotCharacter,
     onSaved: () -> Unit,
     onMakeAnother: () -> Unit,
     onChangeFriend: () -> Unit,
@@ -82,7 +82,7 @@ fun CompletedRoute(
     PlayerTicker(player)
     CompletedScreen(
         song = song,
-        friend = services.friend,
+        friend = friend,
         isPlaying = player.isPlaying,
         positionMs = player.positionMs,
         durationMs = player.durationMs.takeIf { it > 0 } ?: song.result.durationMs,
@@ -157,7 +157,7 @@ fun CompletedScreen(
                         .padding(24.dp),
                 )
                 HintChip(
-                    text = "${friend.friendName.josa("이", "가")} 우리 노래에 맞춰 춤을 춰요",
+                    text = "${friend.nickname.josa("이", "가")} 우리 노래에 맞춰 춤을 춰요",
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 44.dp),

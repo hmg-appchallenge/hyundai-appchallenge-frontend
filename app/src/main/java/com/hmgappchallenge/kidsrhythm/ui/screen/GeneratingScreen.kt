@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -66,21 +67,21 @@ private val StageShape = RoundedCornerShape(48.dp)
 private val StageWidth = 774.dp
 private val StagePanelGap = 52.dp
 
-private val CharacterTop = 254.dp
-private val CharacterWidth = 566.dp
+/** 캐릭터가 앉는 바닥선과 캐릭터 높이. 여백 없는 이미지를 같은 높이로 맞춰 같은 바닥에 앉힌다. */
+private val CharacterFloor = 746.dp
+private val CharacterHeight = 412.dp
+private val CharacterTop = CharacterFloor - CharacterHeight
 
 /** 이웃한 캐릭터의 가운데끼리 거리. */
 private val CharacterSpacing = 310.dp
 
-/** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도. */
-private val SideCharacterBlur = 10.dp
-
-/** 캐릭터가 한 자리에 머무는 시간과 옆으로 밀리는 시간 (피그마 '인터렉션 및 애니메이션 코멘트': 3~3.5초, 0.45초). */
-private const val CAROUSEL_HOLD_MILLIS = 3_200L
-private const val CAROUSEL_SLIDE_MILLIS = 450
-
-/** 양옆 캐릭터 불투명도 (피그마 코멘트: 약 40%). */
+/** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도와 불투명도. */
+private val SideCharacterBlur = 4.dp
 private const val SIDE_CHARACTER_ALPHA = 0.4f
+
+/** 캐릭터가 한 자리에 머무는 시간과 왼쪽으로 한 칸 밀리는 시간. 차량 화면이라 시선이 덜 흔들리게 천천히 바꾼다. */
+private const val CAROUSEL_HOLD_MILLIS = 3_500L
+private const val CAROUSEL_SLIDE_MILLIS = 450
 
 /** 처음 가운데에 서는 캐릭터. */
 private val FirstCenterCharacter = MascotCharacter.CAT
@@ -273,7 +274,7 @@ private fun BoxScope.CharacterCarousel() {
                 .zIndex(-abs(slot))
                 .padding(top = CharacterTop)
                 .offset(x = CharacterSpacing * slot)
-                .width(CharacterWidth)
+                .height(CharacterHeight)
                 .alpha(1f - (1f - SIDE_CHARACTER_ALPHA) * distance)
                 .blur(SideCharacterBlur * distance),
         )

@@ -55,7 +55,7 @@ fun VoiceCard(
 ) {
     val playing = state == VoiceCardState.Playing
     // border는 공간을 차지하지 않으므로 패딩에 두께를 더해 테두리 바깥 크기를 맞춘다
-    val borderWidth = 2.dp
+    val borderWidth = if (playing) 4.dp else 2.dp
     Column(
         // 기본 너비는 508. 호출하는 쪽이 modifier나 weight로 크기를 정하면 그 크기를 따른다
         modifier = modifier
@@ -65,7 +65,7 @@ fun VoiceCard(
             .background(AppColors.SurfaceBasic)
             .border(
                 width = borderWidth,
-                color = if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight100,
+                color = if (playing) AppColors.BrandOrange else AppColors.VoiceCardWaiting,
                 shape = CardShape,
             )
             .padding(28.dp + borderWidth),
@@ -82,14 +82,24 @@ fun VoiceCard(
                 modifier = Modifier.clip(CircleShape),
                 size = 96.dp,
                 // 120 배지 기준 아이콘 크기를 유지한다
-                iconSize = 120.dp * instrument.iconRatio,
+                iconSize = instrument.iconSize,
             )
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(text = name, style = AppTypography.TitleLargeExtraStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
-                Text(text = instrument.label, style = AppTypography.BodySmallStrong, color = AppColors.TextDarkTertiary, maxLines = 1)
+                Text(
+                    text = name,
+                    style = AppTypography.TitleLargeExtraStrong,
+                    color = if (playing) AppColors.VoiceCardName else AppColors.VoiceCardWaitingName,
+                    maxLines = 1,
+                )
+                Text(
+                    text = instrument.label,
+                    style = AppTypography.BodySmallStrong,
+                    color = if (playing) AppColors.VoiceCardInstrument else AppColors.VoiceCardWaiting,
+                    maxLines = 1,
+                )
             }
             StatusPill(playing)
         }
@@ -102,7 +112,7 @@ private fun StatusPill(playing: Boolean) {
     Row(
         modifier = Modifier
             .clip(CircleShape)
-            .background(if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight50)
+            .background(if (playing) AppColors.BrandOrange else AppColors.VoiceCardWaiting)
             .padding(start = 16.dp, end = 20.dp, top = 10.dp, bottom = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -110,12 +120,12 @@ private fun StatusPill(playing: Boolean) {
         Box(
             Modifier
                 .size(12.dp)
-                .background(if (playing) AppColors.BasicStaticLight100 else AppColors.IconDarkQuaternary, CircleShape),
+                .background(AppColors.VoiceCardStatusText, CircleShape),
         )
         Text(
             text = if (playing) "연주 중" else "대기",
             style = StatusTextStyle,
-            color = if (playing) AppColors.BasicStaticLight100 else AppColors.TextDarkSecondary,
+            color = AppColors.VoiceCardStatusText,
             maxLines = 1,
         )
     }
@@ -136,7 +146,7 @@ private fun LevelBars(playing: Boolean) {
                     .weight(1f)
                     .height((if (playing) h else WAITING_LEVEL_HEIGHT).dp)
                     .background(
-                        if (playing) AppColors.BrandOrange else AppColors.BasicAlphaLight200,
+                        if (playing) AppColors.BrandOrange else AppColors.VoiceCardWaiting,
                         RoundedCornerShape(6.dp),
                     ),
             )

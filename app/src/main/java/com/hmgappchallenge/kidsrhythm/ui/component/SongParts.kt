@@ -200,16 +200,6 @@ private fun ProgressTrack(positionMs: Long, durationMs: Long, onSeek: (Long) -> 
     }
 }
 
-/** 친구(마스코트) 이름. 피그마 '같이 놀 친구 고르기' 기준. */
-val MascotCharacter.friendName: String
-    get() = when (this) {
-        MascotCharacter.DOG -> "둥둥이"
-        MascotCharacter.CAT -> "콩콩이"
-        MascotCharacter.FROG -> "말랑이"
-        MascotCharacter.PIG -> "뭉게"
-        MascotCharacter.LION -> "반짝이"
-    }
-
 /** 받침이 있으면 [withJong], 없으면 [withoutJong]을 붙인다 (콩콩이가, 뭉게가). */
 fun String.josa(withJong: String, withoutJong: String): String {
     val c = lastOrNull() ?: return this

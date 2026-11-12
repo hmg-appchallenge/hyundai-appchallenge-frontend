@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,13 +18,15 @@ import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.component.AppPage
 import com.hmgappchallenge.kidsrhythm.ui.component.AppTab
 import com.hmgappchallenge.kidsrhythm.ui.component.HintChip
+import com.hmgappchallenge.kidsrhythm.ui.component.IconSquareButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
+import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 import com.hmgappchallenge.kidsrhythm.ui.component.Mascot
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
-import com.hmgappchallenge.kidsrhythm.ui.component.MascotPose
 import com.hmgappchallenge.kidsrhythm.ui.component.SongRow
 import com.hmgappchallenge.kidsrhythm.ui.component.SpeechBubble
 import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
+import com.hmgappchallenge.kidsrhythm.ui.component.StandingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
@@ -35,9 +37,13 @@ data class RecentSong(val title: String, val meta: String)
 
 @Composable
 fun HomeScreen(
+    character: MascotCharacter,
     recentSong: RecentSong?,
     isConsentVisible: Boolean,
     onStart: () -> Unit,
+    onOpenVoiceSettings: () -> Unit,
+    onOpenCharacterPicker: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenArchive: () -> Unit,
     onPlayRecent: () -> Unit,
     onAgreeConsent: () -> Unit,
@@ -55,16 +61,7 @@ fun HomeScreen(
                     .align(Alignment.TopCenter)
                     .padding(top = 120.dp),
             )
-            Mascot(
-                character = MascotCharacter.LION,
-                pose = MascotPose.Sitting,
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 304.dp)
-                    // 시안에서 사자는 스테이지 가운데보다 28 왼쪽에 있다
-                    .offset(x = (-28).dp)
-                    .width(516.dp),
-            )
+            StandingCharacter(character)
             HintChip(
                 text = "노래를 완성하면 친구가 나와서 춤춰요",
                 modifier = Modifier
@@ -105,6 +102,24 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
         },
+        headerActions = {
+            LargeButton(
+                text = "목소리 설정",
+                onClick = onOpenVoiceSettings,
+                icon = R.drawable.ic_mic,
+                variant = LargeButtonVariant.Secondary,
+                modifier = Modifier.widthIn(min = 320.dp),
+            )
+            LargeButton(
+                text = "친구 고르기",
+                onClick = onOpenCharacterPicker,
+                icon = R.drawable.ic_paw,
+                variant = LargeButtonVariant.Secondary,
+                // 글자가 잘리지 않도록 시안 너비를 최소값으로 둔다
+                modifier = Modifier.widthIn(min = 279.dp),
+            )
+            IconSquareButton(icon = R.drawable.ic_settings, contentDescription = "설정", onClick = onOpenSettings)
+        },
         overlay = {
             if (isConsentVisible) {
                 ConsentDialog(onAgree = onAgreeConsent, onDismiss = onDismissConsent)
@@ -117,9 +132,13 @@ fun HomeScreen(
 @Composable
 private fun HomeScreenPreview() {
     HomeScreen(
+        character = MascotCharacter.LION,
         recentSong = RecentSong("사과 노래", "어제 · 1분 42초"),
         isConsentVisible = false,
         onStart = {},
+        onOpenVoiceSettings = {},
+        onOpenCharacterPicker = {},
+        onOpenSettings = {},
         onOpenArchive = {},
         onPlayRecent = {},
         onAgreeConsent = {},
