@@ -40,6 +40,7 @@ import com.hmgappchallenge.kidsrhythm.vehicle.VehicleState
 import kotlinx.coroutines.delay
 import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsState
 import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.SplashScreen
 import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsActions
 import com.hmgappchallenge.kidsrhythm.ui.screen.PrivacyPolicyScreen
 import com.hmgappchallenge.kidsrhythm.settings.storageLabel
@@ -51,6 +52,7 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableIntStateOf
 
 private object Route {
+    const val SPLASH = "splash"
     const val HOME = "s01_home"
     const val INTRO = "s02_intro"
     const val BASE_BEAT = "s03_base_beat"
@@ -91,7 +93,15 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
     // 같이 놀 친구. 홈, 친구 고르기, S06 완성이 함께 본다
     var character by remember { mutableStateOf(services.characterStore.selected) }
 
-    NavHost(navController = navController, startDestination = Route.HOME) {
+    NavHost(navController = navController, startDestination = Route.SPLASH) {
+        // 앱을 켜면 시작 화면을 잠깐 보여 주고 홈으로 간다. 뒤로 가기로 다시 돌아오지 않게 지운다
+        composable(Route.SPLASH) {
+            SplashScreen(
+                onFinished = {
+                    navController.navigate(Route.HOME) { popUpTo(Route.SPLASH) { inclusive = true } }
+                },
+            )
+        }
         composable(Route.HOME) {
             val songs by services.archive.songs.collectAsState()
             val latest = songs.maxByOrNull { it.createdAtMillis }

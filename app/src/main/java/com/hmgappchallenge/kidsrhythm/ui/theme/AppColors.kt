@@ -132,6 +132,9 @@ object AppColors {
     val BasicProgressTrack = AppPalette.WarmBlack200
     val SongToneYellow = Color(0xFFFFBC48)
 
+    // 시작 화면
+    val SplashBackground = Color(0xFFFFF4E9)
+
     // 빈 보관함 (S07-0)
     val EmptyArchiveCircle = Color(0xFFFFF3D6)
     val EmptyArchiveIcon = Color(0xFFF0A23A)
