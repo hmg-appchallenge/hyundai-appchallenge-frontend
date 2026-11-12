@@ -150,7 +150,11 @@ fun CompletedRoute(
         LaunchedEffect(Unit) { onBack() }
         return
     }
-    val song = remember(received) { completedSongOf(received.result, received.createdAtMillis) }
+    // S06-2에서 바꾼 제목. 저장하면 보관함에도 이 제목으로 들어간다
+    var editedTitle by rememberSaveable { mutableStateOf<String?>(null) }
+    val song = remember(received, editedTitle) {
+        completedSongOf(received.result, received.createdAtMillis).let { s -> editedTitle?.let { s.copy(title = it) } ?: s }
+    }
     val membersLabel = remember(received, family) {
         received.result.members.joinToString(" · ") { m ->
             val name = family.firstOrNull { it.id == m.memberId }?.name.orEmpty()
@@ -185,13 +189,14 @@ fun CompletedRoute(
                     val members = received.result.members.map { m ->
                         ArchivedMember(m.memberId, family.firstOrNull { it.id == m.memberId }?.name.orEmpty(), m.instrument)
                     }
-                    services.archive.import(received.result, received.audioFile, members, received.createdAtMillis)
+                    services.archive.import(received.result.copy(title = song.title), received.audioFile, members, received.createdAtMillis)
                     services.completedSong = null
                     onSaved()
                 }
             }
         },
         onMakeAnother = onMakeAnother,
+        onTitleChange = { editedTitle = it },
     )
 }
 
@@ -210,6 +215,7 @@ fun CompletedScreen(
     onSave: () -> Unit,
     onMakeAnother: () -> Unit,
     onSeek: (Long) -> Unit = {},
+    onTitleChange: (String) -> Unit = {},
 ) {
     // 처음에는 기본 보기로 열고, 크게 보기·작게 보기로 오간다
     var enlarged by rememberSaveable { mutableStateOf(false) }
@@ -226,6 +232,7 @@ fun CompletedScreen(
             onBack = onBack,
             onSave = onSave,
             onMakeAnother = onMakeAnother,
+            onTitleChange = onTitleChange,
         )
         return
     }
@@ -318,8 +325,25 @@ private fun BasicView(
     onBack: () -> Unit,
     onSave: () -> Unit,
     onMakeAnother: () -> Unit,
+    onTitleChange: (String) -> Unit,
 ) {
-    SubPage(title = "완성!", onBack = onBack) {
+    var editingTitle by rememberSaveable { mutableStateOf(false) }
+    SubPage(
+        title = "완성!",
+        onBack = onBack,
+        overlay = {
+            if (editingTitle) {
+                TitleEditDialog(
+                    initial = song.title,
+                    onCancel = { editingTitle = false },
+                    onSave = {
+                        onTitleChange(it)
+                        editingTitle = false
+                    },
+                )
+            }
+        },
+    ) {
         Row(
             modifier = Modifier
                 .weight(1f)
@@ -366,7 +390,7 @@ private fun BasicView(
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
-                    SongTitle(song.title)
+                    SongTitle(song.title, onEdit = { editingTitle = true })
                     SongLyricsList(
                         lines = song.lyrics,
                         current = lyricIndexAt(song, positionMillis),
@@ -402,7 +426,7 @@ private fun BasicView(
 }
 
 @Composable
-private fun SongTitle(title: String) {
+private fun SongTitle(title: String, onEdit: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("오늘 만든 노래", style = AppTypography.LabelMedium, color = AppColors.HintChipText)
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -414,13 +438,12 @@ private fun SongTitle(title: String) {
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false),
             )
-            // TODO(디자인): 제목 바꾸기 팝업(S06-2) 시안이 오면 연결한다
             Box(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(EditButtonShape)
                     .background(AppColors.ButtonWarmSecondary)
-                    .clickable(role = Role.Button, onClick = {}),
+                    .clickable(role = Role.Button, onClick = onEdit),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(painterResource(R.drawable.ic_edit), contentDescription = "제목 바꾸기", tint = AppColors.TextDarkPrimary, modifier = Modifier.size(44.dp))
