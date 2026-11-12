@@ -332,6 +332,11 @@ fun CompletedScreen(
             durationMillis = song.durationMillis,
             isPlaying = isPlaying,
             onTogglePlay = onTogglePlay,
+            // 아직 저장하지 않은 곡이라 다른 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
+            onNext = {
+                onSeek(0)
+                if (!isPlaying) onTogglePlay()
+            },
         )
     }
 }
@@ -511,6 +516,7 @@ private fun MiniPlayer(
     durationMillis: Long,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
+    onNext: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -557,8 +563,7 @@ private fun MiniPlayer(
                 contentDescription = if (isPlaying) "일시정지" else "재생",
                 onClick = onTogglePlay,
             )
-            // TODO(오디오): 보관함의 다음 곡으로 넘긴다
-            PlayerButton(icon = R.drawable.ic_next, contentDescription = "다음 곡", onClick = {})
+            PlayerButton(icon = R.drawable.ic_next, contentDescription = "다음 곡", onClick = onNext)
         }
     }
 }
