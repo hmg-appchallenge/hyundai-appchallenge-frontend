@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
@@ -67,9 +68,9 @@ fun SpeechBubble(text: String, modifier: Modifier = Modifier) {
 
 /** 스테이지 바닥. 일정 높이부터 바닥색이 아래로 옅어진다. 스테이지 상자를 가득 채워 그린다. */
 @Composable
-fun StageFloor(modifier: Modifier = Modifier) {
+fun StageFloor(modifier: Modifier = Modifier, top: Dp = StageFloorTop) {
     Canvas(modifier.fillMaxSize()) {
-        val top = StageFloorTop.toPx()
+        val top = top.toPx()
         drawRect(
             brush = Brush.verticalGradient(
                 colors = listOf(AppColors.StageFloor, Color.Transparent),

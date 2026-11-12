@@ -7,6 +7,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -14,9 +15,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.hmgappchallenge.kidsrhythm.archive.ArchivedSong
 import com.hmgappchallenge.kidsrhythm.archive.SongArchive
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.character.CharacterStore
+import com.hmgappchallenge.kidsrhythm.completed.CompletedSong
+import com.hmgappchallenge.kidsrhythm.completed.completedSongOf
+import com.hmgappchallenge.kidsrhythm.completed.memberInstrumentsLabel
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.FamilyRepository
@@ -38,6 +43,7 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.RecordingRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private object Route {
     const val HOME = "s01_home"
@@ -70,6 +76,9 @@ fun AppNavHost(
     val consentGate = remember(consentStore) { ConsentGate(consentStore) }
     // 같이 놀 친구. 홈과 친구 고르기가 함께 본다
     var character by remember(characterStore) { mutableStateOf(characterStore.selected) }
+    // 방금 만든 노래. S05에서 받아 S06에서 보여 준다
+    var completedSong by remember { mutableStateOf<CompletedSong?>(null) }
+    val scope = rememberCoroutineScope()
 
     NavHost(navController = navController, startDestination = Route.HOME) {
         composable(Route.HOME) {
@@ -142,7 +151,12 @@ fun AppNavHost(
                 songGenerator = songGenerator,
                 word = entry.arguments?.getString(Route.ARG_WORD),
                 onBack = { navController.popBackStack() },
-                onGenerated = {
+                onGenerated = { generated ->
+                    completedSong = completedSongOf(
+                        generated,
+                        heardWord = entry.arguments?.getString(Route.ARG_WORD),
+                        nowMillis = System.currentTimeMillis(),
+                    )
                     navController.navigate(Route.COMPLETED) {
                         popUpTo(Route.HOME)
                     }
@@ -150,10 +164,35 @@ fun AppNavHost(
             )
         }
         composable(Route.COMPLETED) {
+            val song = completedSong
+            val members by familyRepository.members.collectAsState()
+            if (song == null) {
+                // 만든 노래 없이 들어오면(앱을 다시 켠 경우 등) 홈으로 돌아간다
+                LaunchedEffect(Unit) { navController.popBackToHome() }
+                return@composable
+            }
             CompletedScreen(
+                song = song,
+                character = character,
+                membersLabel = memberInstrumentsLabel(members),
+                onBack = { navController.popBackToHome() },
+                onChangeCharacter = { navController.navigate(Route.CHARACTER_PICKER) },
                 onSave = {
-                    navController.navigate(Route.ARCHIVE) {
-                        popUpTo(Route.HOME)
+                    scope.launch {
+                        // TODO(AI 서버): 받은 mp3를 내려받아 로컬 경로를 넣는다
+                        songArchive.save(
+                            ArchivedSong(
+                                id = song.createdAtMillis,
+                                title = song.title,
+                                createdAtMillis = song.createdAtMillis,
+                                durationMillis = song.durationMillis,
+                                lyrics = song.lyrics,
+                                audioFilePath = "",
+                            ),
+                        )
+                        navController.navigate(Route.ARCHIVE) {
+                            popUpTo(Route.HOME)
+                        }
                     }
                 },
                 onMakeAnother = {

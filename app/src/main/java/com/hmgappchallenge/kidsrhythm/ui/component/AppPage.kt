@@ -128,10 +128,22 @@ fun SubPage(
     title: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    headerActions: @Composable RowScope.() -> Unit = {},
     overlay: @Composable BoxScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    AppWindow(header = { BackHeader(title, onBack) }, modifier = modifier, overlay = overlay, content = content)
+    AppWindow(
+        header = {
+            Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
+                BackHeader(title, onBack)
+                Spacer(Modifier.weight(1f))
+                headerActions()
+            }
+        },
+        modifier = modifier,
+        overlay = overlay,
+        content = content,
+    )
 }
 
 @Composable
@@ -141,7 +153,7 @@ private fun BackHeader(title: String, onBack: () -> Unit) {
             modifier = Modifier
                 .size(80.dp)
                 .clip(BackButtonShape)
-                .background(AppColors.BasicAlphaLight50)
+                .background(AppColors.ButtonWarmSecondary)
                 .clickable(role = Role.Button, onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {

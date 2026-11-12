@@ -122,4 +122,11 @@ object AppColors {
     val FieldLockedBackground = AppPalette.WarmGray200
     val FieldLockedBorder = AppPalette.WarmGray400
     val FieldLockedText = AppPalette.WarmGray600
+
+    // 완성 화면 (S06)
+    val CompletedStageBackground = AppPalette.Orange100
+    val ParticleOrange = AppPalette.Orange500
+    val ParticleYellow = Color(0xFFFFBC48)
+    val MiniPlayerBackground = AppPalette.WarmWhite0
+    val MiniPlayerTrack = AppPalette.WarmGray200
 }
