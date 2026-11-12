@@ -59,7 +59,11 @@ import com.hmgappchallenge.kidsrhythm.completed.ParticleShape
 import com.hmgappchallenge.kidsrhythm.completed.formatPlayTime
 import com.hmgappchallenge.kidsrhythm.completed.lyricIndexAt
 import com.hmgappchallenge.kidsrhythm.completed.nextSpawnDelay
+import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
 import com.hmgappchallenge.kidsrhythm.completed.randomParticle
+import com.hmgappchallenge.kidsrhythm.ui.component.AnimatedMascot
+import com.hmgappchallenge.kidsrhythm.ui.component.MascotAnimation
+import com.hmgappchallenge.kidsrhythm.ui.component.mascotAnimationFor
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 import com.hmgappchallenge.kidsrhythm.ui.component.Mascot
@@ -87,6 +91,10 @@ private val FloorTop = 480.dp
 /** 앉은 친구가 무대 가운데에 앉는 위치와 높이. 파티클은 이 친구의 가운데에서 퍼진다. */
 private val CharacterTop = 103.dp
 private val CharacterHeight = 430.dp
+
+/** 애니메이션 프레임(512px, 캐릭터가 위 15px ~ 아래 492px)을 멈춘 이미지와 같은 높이·바닥에 맞춘 크기와 위치. */
+private val AnimationSize = 462.dp
+private val AnimationTop = 89.dp
 
 /** 파티클이 생기는 거리. 캐릭터 가운데에서 바로 생기면 몸에 가려 보이지 않아 가장자리쯤에서 시작한다. */
 private val ParticleStartRadius = 200.dp
@@ -146,7 +154,7 @@ fun CompletedScreen(
                 .background(AppColors.CompletedStageBackground),
         ) {
             StageFloor(top = FloorTop)
-            DancingCharacter(character)
+            DancingCharacter(character, animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)))
             // TODO(디자인): 기본 보기(작게 보기) 시안이 오면 연결한다
             ShrinkButton(onClick = {}, modifier = Modifier.offset(x = 39.dp, y = 36.dp))
         }
@@ -186,7 +194,7 @@ fun CompletedScreen(
 
 /** 무대 가운데 앉은 친구와, 그 둘레로 퍼지는 꽃가루 파티클. */
 @Composable
-private fun BoxScope.DancingCharacter(character: MascotCharacter) {
+private fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnimation?) {
     val particles = remember { mutableStateListOf<Particle>() }
     var now by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
@@ -210,15 +218,25 @@ private fun BoxScope.DancingCharacter(character: MascotCharacter) {
         val center = Offset(size.width / 2, (CharacterTop + CharacterHeight / 2).toPx())
         particles.forEach { drawParticle(it, now, center, note) }
     }
-    // TODO(디자인): 친구가 춤추는 애니메이션이 오면 바꾼다
-    Mascot(
-        character = character,
-        pose = MascotPose.Sitting,
-        modifier = Modifier
-            .align(Alignment.TopCenter)
-            .padding(top = CharacterTop)
-            .height(CharacterHeight),
-    )
+    if (animation != null) {
+        // 애니메이션 프레임은 정사각형이고 캐릭터가 높이의 약 93%를 차지한다. 멈춘 이미지와 같은 크기로 보이게 맞춘다
+        AnimatedMascot(
+            animation = animation,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = AnimationTop)
+                .size(AnimationSize),
+        )
+    } else {
+        Mascot(
+            character = character,
+            pose = MascotPose.Sitting,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = CharacterTop)
+                .height(CharacterHeight),
+        )
+    }
 }
 
 private fun DrawScope.drawParticle(particle: Particle, nowMillis: Long, center: Offset, note: Painter) {
@@ -373,7 +391,7 @@ private fun PlayerButton(icon: Int, contentDescription: String, onClick: () -> U
 @Composable
 private fun CompletedScreenPreview() {
     CompletedScreen(
-        song = CompletedSong("사과 노래", "사과", listOf("사과는 빨갛다, 둥둥 둥둥"), 102_000, 0),
+        song = CompletedSong("사과 노래", "사과", listOf("사과는 빨갛다, 둥둥 둥둥"), 102_000, 0, bpm = 110),
         character = MascotCharacter.LION,
         membersLabel = "엄마 북 · 첫째 탬버린 · 둘째 셰이커",
         onBack = {},

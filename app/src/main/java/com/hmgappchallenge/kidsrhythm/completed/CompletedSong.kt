@@ -13,6 +13,7 @@ data class CompletedSong(
     val lyrics: List<String>,
     val durationMillis: Long,
     val createdAtMillis: Long,
+    val bpm: Int,
 )
 
 /**
@@ -33,6 +34,7 @@ fun completedSongOf(
         lyrics = generated.lyrics,
         durationMillis = TimeUnit.SECONDS.toMillis(generated.durationSec.toLong()),
         createdAtMillis = nowMillis,
+        bpm = generated.bpm,
     )
 }
 
