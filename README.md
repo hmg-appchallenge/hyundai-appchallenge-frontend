@@ -1,8 +1,49 @@
-# 차곡차곡
+<p align="center">
+  <img src="app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="120" alt="차곡차곡 아이콘">
+</p>
 
-주행 리듬과 아이의 목소리로 세상에 하나뿐인 동요를 만드는 Pleos Connect Kids 앱이에요.
+<h1 align="center">차곡차곡</h1>
 
-> 팀 스포티카이가 만들어요. 화면 흐름(S00~S07)과 노래 생성 서버 연동(녹음 세션, 목소리 등록, 완성곡 저장)이 들어가 있어요.
+<p align="center">
+  차 안에서 가족의 목소리를 모아, 세상에 하나뿐인 우리 가족만의 동요를 만드는 패밀리 뮤직 서비스<br>
+  <b>팀 스포티카이</b> · 현대자동차그룹 차량용 앱 개발 공모전
+</p>
+
+<p align="center">
+  <img src="app/src/main/res/drawable-nodpi/img_splash.webp" width="720" alt="차곡차곡 시작 화면">
+</p>
+
+## 어떤 앱인가요
+
+차곡차곡은 Pleos Connect(Android Automotive) 차량에서 돌아가는 가족용 동요 만들기 앱이에요. 드라이브하는 동안 아이와 가족이 나눈 말이 가사가 되고, 차가 달리는 속도가 노래의 비트가 돼요.
+
+| 차에서 모으는 것 | 노래에서 쓰는 곳 |
+|---|---|
+| 차량 속도 | 정차·골목·시내·고속 구간마다 2·4·8·16비트와 빠르기(BPM)가 정해져요 |
+| 가족 목소리 | 녹음에서 들린 말로 가사를 만들고, 목소리마다 고른 악기(12종)를 붙여요 |
+| 바깥 온도·출발 시각 | 계절과 분위기를 가사에 담아요 |
+
+완성된 노래는 고른 친구 캐릭터가 춤추는 화면에서 바로 듣고, 이 차의 보관함에만 저장해요. 정차 중에는 캐릭터를 크게 보고, 주행 중에는 운전에 방해되지 않게 가사와 재생 막대만 보여요.
+
+## 화면 흐름
+
+| 단계 | 화면 |
+|---|---|
+| 시작 | 시작 화면 → S00 보호자 동의 → S01 홈 |
+| 준비 | S02 목소리 설정(가족 추가·목소리 등록·악기 고르기), S01-1 친구 고르기 |
+| 만들기 | S03 차가 만드는 비트 → S04 같이 노래해요(녹음) → S05 노래 만드는 중 → S06 완성 |
+| 다시 듣기 | S07 보관함 → S07-1 다시 듣기 |
+| 설정 | S08 설정, S00-1 개인정보 처리방침 |
+
+## 구성
+
+| 부분 | 내용 |
+|---|---|
+| 앱 (이 저장소) | Kotlin + Jetpack Compose, Pleos Connect(AAOS) API 34. 화면, 녹음, 차량 속도, 비트 재생, 보관함 |
+| 노래 생성 서버 ([백엔드 저장소](https://github.com/hmg-appchallenge/hyundai-appchallenge-backend)) | 음성 인식, 목소리 구분, 가사·제목(Claude), 반주·노래(ElevenLabs Music). 녹음과 완성곡을 오래 두지 않아요 |
+| 주고받는 형식 | [docs/API.md](docs/API.md) |
+
+테스트 앱은 [Releases](https://github.com/hmg-appchallenge/hyundai-appchallenge-frontend/releases)에서 받을 수 있어요.
 
 ## 실행 방법
 
