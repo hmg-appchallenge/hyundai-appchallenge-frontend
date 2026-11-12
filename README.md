@@ -8,12 +8,17 @@
 
 1. JDK 17과 Android Studio를 준비해요.
 2. [Pleos Connect Emulator 설치 문서](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator)대로 AVD를 만들고 실행해요.
-3. 노래 생성 서버를 같은 PC에서 켜요 (아래 "노래 생성 서버").
+3. 서버 주소를 정해요. 고정 서버(늘 켜져 있어요)를 쓰면 `local.properties`에 두 줄만 적고 따로 켤 건 없어요. 같은 PC에서 서버를 켜서 쓸 수도 있어요 (아래 "노래 생성 서버").
 4. 앱을 빌드해서 설치해요.
 
 ```bash
 ./gradlew installDebug
 ```
+
+5. 에뮬레이터 마이크를 켜요. 에뮬레이터는 마이크가 기본으로 꺼져 있어서, 끈 채로 녹음하면 아무 소리도 들어가지 않아요.
+   - 에뮬레이터 도구 막대의 **More(⋯)** → **Microphone** → **Enable Host Microphone Access**를 켜요. 에뮬레이터 버전에 따라 이름이 **Virtual microphone uses host audio input**이에요.
+   - 명령줄로 에뮬레이터를 켤 때는 `-allow-host-audio` 옵션을 붙여도 돼요.
+   - 처음 켤 때 Windows가 마이크 권한을 물으면 허용해요. 에뮬레이터를 다시 켜면 꺼져 있을 수 있으니 녹음 전에 한 번 확인해요.
 
 ## 노래 생성 서버
 
@@ -27,7 +32,7 @@
 | 인증 키 | 서버에 `KR_API_KEY`가 있으면 바깥에서 붙을 때 `local.properties`에 `kidsrhythm.apiKey=...`가 꼭 있어야 해요. 같은 PC의 에뮬레이터(`10.0.2.2`)는 키 없이 돼요 |
 
 - 서버 실행 방법은 AI·백엔드 담당이 따로 안내해요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
-- 에뮬레이터에서 PC 마이크를 쓰려면 에뮬레이터를 `-allow-host-audio` 옵션으로 켜요.
+- 에뮬레이터 마이크는 "실행 방법" 5번처럼 켜요.
 - 사람 목소리 없이 시험하려면 16kHz 모노 16비트 wav를 앱 내부 폴더에 `debug_mic.wav`라는 이름으로 넣어요. 디버그 빌드는 마이크 대신 이 파일을 실제 시간처럼 흘려보내요. AAOS 에뮬레이터는 운전자가 사용자 10이라 `run-as`로 넣어요 (`adb shell am get-current-user`로 번호 확인).
 
 ```bash
@@ -46,6 +51,23 @@ adb shell cmd car_service inject-vhal-event 0x11600207 11.67
 ```bash
 adb shell "echo 42 | run-as com.hmgappchallenge.kidsrhythm --user 10 sh -c 'cat > files/debug_speed.txt'"
 adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 rm files/debug_speed.txt
+```
+
+## 노래는 어디에 저장되나요
+
+| 어디 | 남는 것 |
+|---|---|
+| 서버 | 아무것도 남지 않아요. 녹음은 노래를 다 만들면 바로 지우고, 완성 mp3는 앱이 받자마자 지워요. 앱이 받아 가지 않아도 완성 10분 뒤에 지워져요 ([docs/API.md](docs/API.md) "기본 원칙") |
+| S06 완성 화면 | 받은 mp3를 앱 임시 폴더에 두고 바로 틀어요. **보관함에 저장**을 눌러야 보관함에 남아요 |
+| S07 보관함 | 앱 전용 저장소 `files/songs/`에 곡마다 mp3와 정보 파일(json: 제목, 만든 시간, 줄마다 시간이 있는 가사, 가족 이름과 악기)이 있어요. 동의 화면의 "노래는 이 차에만 저장해요"를 지키는 구조예요 |
+
+- 처음 설치하면 보관함이 비어 있어요. 예시 곡은 넣어 두지 않았어요.
+- 심사·시연에서 만든 노래는 그 PC에서 돌아가는 에뮬레이터 안, 앱 전용 저장소에 저장돼요. PC의 다운로드 폴더 같은 곳에는 파일이 생기지 않아요.
+- 앱을 지우거나 에뮬레이터 데이터를 지우면(Wipe Data) 보관함도 같이 지워져요.
+- 저장된 파일은 디버그 빌드에서 adb로 볼 수 있어요.
+
+```bash
+adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 ls files/songs
 ```
 
 ## 테스트 환경 및 설정
