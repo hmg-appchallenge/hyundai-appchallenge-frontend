@@ -177,7 +177,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             CompletedRoute(
                 services = services,
                 family = family,
-                friend = character,
+                character = character,
                 onSaved = {
                     navController.navigate(Route.ARCHIVE) {
                         popUpTo(Route.HOME)
@@ -189,7 +189,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                     }
                 },
                 // S06-1 친구 바꾸기는 홈의 친구 고르기(S01-1)와 같은 화면을 쓴다
-                onChangeFriend = { navController.navigate(Route.CHARACTER_PICKER) },
+                onChangeCharacter = { navController.navigate(Route.CHARACTER_PICKER) },
                 onBack = { navController.popBackToHome() },
             )
         }
