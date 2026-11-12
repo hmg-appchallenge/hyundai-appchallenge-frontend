@@ -1,5 +1,8 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -33,6 +36,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -58,16 +62,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmgappchallenge.kidsrhythm.R
+import com.hmgappchallenge.kidsrhythm.audio.VoiceEnrollment
 import com.hmgappchallenge.kidsrhythm.family.FamilyMember
 import com.hmgappchallenge.kidsrhythm.family.MAX_NAME_LENGTH
 import com.hmgappchallenge.kidsrhythm.family.MemberDraft
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
 import com.hmgappchallenge.kidsrhythm.family.takenInstruments
+import com.hmgappchallenge.kidsrhythm.server.ServerException
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentCategory
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.LoadingSpinner
 import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
@@ -114,20 +121,70 @@ fun BoxScope.MemberEditorDialog(
     onDismiss: () -> Unit,
     onSubmit: (MemberDraft) -> Unit,
     onDelete: (FamilyMember) -> Unit,
+    enrollment: VoiceEnrollment? = null,
+    onPreviewInstrument: (Instrument) -> Unit = {},
 ) {
     var draft by remember(mode) {
         mutableStateOf(if (mode is MemberEditorMode.Edit) MemberDraft.from(mode.member) else MemberDraft())
     }
-    // TODO(오디오 · AI 서버): 실제로 마이크 녹음을 하고 목소리를 등록한다. 지금은 정해진 시간만 흘려 등록됨으로 바꾼다
+    var checking by remember { mutableStateOf(false) }
+    var voiceError by remember { mutableStateOf<String?>(null) }
+    var uploadPending by remember { mutableStateOf(false) }
+    // 정해진 시간 동안 마이크로 녹음하고, 시간이 다 되면 서버에서 목소리 특징을 받는다.
+    // 녹음이 끝나는 순간 이 효과는 키(recording)가 바뀌어 취소되므로, 서버로 보내기는 새로 시작되는 효과(recording=false)에서 한다
     val recording = draft.voice is VoiceStatus.Recording
+    var justRecorded by remember { mutableStateOf(false) }
     LaunchedEffect(recording) {
-        if (!recording) return@LaunchedEffect
-        var last = withFrameMillis { it }
-        while (draft.voice is VoiceStatus.Recording) {
-            withFrameMillis { now ->
-                draft = draft.tickRecording(now - last)
-                last = now
+        if (recording) {
+            justRecorded = true
+            var last = withFrameMillis { it }
+            while (draft.voice is VoiceStatus.Recording) {
+                withFrameMillis { now ->
+                    draft = draft.tickRecording(now - last)
+                    last = now
+                }
             }
+        } else if (justRecorded) {
+            justRecorded = false
+            if (enrollment != null && draft.voice == VoiceStatus.Registered) uploadPending = true
+        }
+    }
+    LaunchedEffect(uploadPending) {
+        if (!uploadPending || enrollment == null) return@LaunchedEffect
+        checking = true
+        val result = try {
+            enrollment.finish()
+        } catch (_: ServerException) {
+            null
+        }
+        checking = false
+        if (result != null && result.isOk) {
+            draft = draft.copy(embedding = result.embedding)
+            voiceError = null
+        } else {
+            draft = draft.copy(voice = VoiceStatus.None, embedding = null)
+            voiceError = voiceErrorText(result?.quality)
+        }
+        uploadPending = false
+    }
+    DisposableEffect(enrollment) { onDispose { enrollment?.cancel() } }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && enrollment != null && enrollment.start()) {
+            voiceError = null
+            draft = draft.startRecording()
+        } else if (!granted) {
+            voiceError = "목소리를 녹음하려면 마이크 권한이 필요해요"
+        }
+    }
+    val startRecording: () -> Unit = {
+        when {
+            enrollment == null -> draft = draft.startRecording()
+            !enrollment.hasPermission() -> permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+            enrollment.start() -> {
+                voiceError = null
+                draft = draft.startRecording()
+            }
+            else -> voiceError = "마이크를 열 수 없어요"
         }
     }
     var confirmingDelete by remember(mode) { mutableStateOf(false) }
@@ -152,13 +209,18 @@ fun BoxScope.MemberEditorDialog(
             )
             VoicePrompt(
                 voice = draft.voice,
-                onStartRecording = { draft = draft.startRecording() },
+                checking = checking,
+                error = voiceError,
+                onStartRecording = startRecording,
                 modifier = Modifier.padding(top = 28.dp),
             )
             InstrumentPicker(
                 selected = draft.instrument,
                 taken = taken,
-                onSelect = { draft = draft.copy(instrument = it) },
+                onSelect = {
+                    draft = draft.copy(instrument = it)
+                    onPreviewInstrument(it)
+                },
                 modifier = Modifier.padding(top = 24.dp),
             )
             Row(
@@ -170,7 +232,7 @@ fun BoxScope.MemberEditorDialog(
                         LargeButton(
                             text = "추가하기",
                             onClick = { onSubmit(draft) },
-                            enabled = draft.canSubmit,
+                            enabled = draft.canSubmit && !checking && !recording,
                             icon = R.drawable.ic_check,
                             textStyle = AppTypography.TitleSmallExtraStrong,
                             modifier = Modifier.weight(1f),
@@ -197,7 +259,7 @@ fun BoxScope.MemberEditorDialog(
                         LargeButton(
                             text = "저장하기",
                             onClick = { onSubmit(draft) },
-                            enabled = draft.canSubmit,
+                            enabled = draft.canSubmit && !checking && !recording,
                             icon = R.drawable.ic_check,
                             textStyle = AppTypography.TitleSmallExtraStrong,
                             modifier = Modifier.weight(1f),
@@ -337,6 +399,14 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
     )
 }
 
+private fun voiceErrorText(quality: String?): String = when (quality) {
+    "too_short" -> "목소리가 짧게 들렸어요. 문장을 두 번 따라 말해 주세요."
+    "too_quiet" -> "목소리가 작게 들렸어요. 조금 더 크게 말해 주세요."
+    "noisy" -> "주변 소리가 커요. 조용할 때 다시 녹음해 주세요."
+    null -> "노래 서버에 연결할 수 없어요. 서버를 켠 뒤 다시 녹음해 주세요."
+    else -> "목소리를 등록하지 못했어요. 다시 녹음해 주세요."
+}
+
 /** 이름칸 테두리: 주행 중 잠금은 회색, 입력 중은 주황, 쉬는 상태는 옅은 테두리. */
 private fun fieldBorderColor(enabled: Boolean, active: Boolean) = when {
     !enabled -> AppColors.FieldLockedBorder
@@ -345,7 +415,7 @@ private fun fieldBorderColor(enabled: Boolean, active: Boolean) = when {
 }
 
 @Composable
-private fun VoicePrompt(voice: VoiceStatus, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
+private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: String?, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -355,9 +425,15 @@ private fun VoicePrompt(voice: VoiceStatus, onStartRecording: () -> Unit, modifi
         verticalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        if (checking) {
+            PromptSentence("목소리를 확인하는 중이에요")
+            LoadingSpinner(size = 56.dp, contentDescription = null)
+            return@Column
+        }
         when (voice) {
             VoiceStatus.None -> {
                 PromptSentence("“안녕, 우리 같이 노래하자!”")
+                if (error != null) Text(error, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative, textAlign = TextAlign.Center)
                 PromptChip(text = "목소리 녹음 시작하기", onClick = onStartRecording)
             }
             is VoiceStatus.Recording -> {
@@ -489,7 +565,7 @@ private fun InstrumentPicker(
                             instrument = instrument,
                             isSelected = instrument == selected,
                             takenBy = takenBy,
-                            // TODO(오디오): 누르면 3초 미리 듣기를 재생한다
+                            // 누르면 고르면서 3초 미리 듣기를 재생한다 (onSelect → onPreviewInstrument)
                             onClick = { if (takenBy == null) onSelect(instrument) },
                         )
                     }

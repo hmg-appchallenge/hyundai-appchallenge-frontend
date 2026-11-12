@@ -13,8 +13,9 @@ data class RecordingSnapshot(
 )
 
 /**
- * 녹음·음성 인식이 연결되기 전까지 화면을 움직이는 가짜 데이터.
+ * 미리보기(@Preview)와 테스트에서 화면을 움직이는 가짜 데이터.
  * 경과 시간만으로 모든 값을 정해서 같은 시간이면 항상 같은 화면이 나온다.
+ * 실제 녹음 화면은 [RecordingController]가 마이크 음량·화자 구분·음성 인식 결과로 채운다.
  */
 object FakeRecording {
     val family: List<FamilyMember> = FakeFamily.members
@@ -32,13 +33,10 @@ object FakeRecording {
     private val SpeakerRotation = listOf(setOf(1L, 2L), setOf(2L), setOf(3L), setOf(1L, 3L), emptySet())
 
     fun snapshot(elapsedMillis: Long): RecordingSnapshot {
-        // TODO(오디오): VoiceInput 마이크 입력의 음량으로 파형을 만든다
         val barCount = (elapsedMillis / BAR_INTERVAL_MILLIS).toInt()
         // 화면에는 최근 막대만 보이므로 오래된 것은 버린다
         val firstBar = (barCount - MAX_BARS).coerceAtLeast(0)
-        // TODO(AI 서버): 화자 구분 결과로 지금 소리 낸 가족을 정한다
         val speakers = SpeakerRotation[((elapsedMillis / SPEAKER_INTERVAL_MILLIS) % SpeakerRotation.size).toInt()]
-        // TODO(AI 서버 · Pleos Gleo AI): 음성 인식으로 들린 단어를 받는다
         val wordCount = (elapsedMillis / WORD_INTERVAL_MILLIS).toInt().coerceAtMost(SampleWords.size)
         return RecordingSnapshot(
             elapsedMillis = elapsedMillis,

@@ -1,12 +1,15 @@
 package com.hmgappchallenge.kidsrhythm.completed
 
 import com.hmgappchallenge.kidsrhythm.family.FamilyMember
-import com.hmgappchallenge.kidsrhythm.server.GeneratedSong
+import com.hmgappchallenge.kidsrhythm.server.SongResult
 import java.time.Instant
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
 
-/** S06에 보여 줄 완성곡. [highlightWord]는 가사에서 주황으로 강조할 단어다. */
+/**
+ * S06에 보여 줄 완성곡. [highlightWord]는 가사에서 주황으로 강조할 단어다.
+ * [lyricStartsMillis]는 줄마다 부르기 시작하는 시간이고, 비어 있으면 곡 길이를 줄 수로 나눈다.
+ */
 data class CompletedSong(
     val title: String,
     val highlightWord: String?,
@@ -14,27 +17,28 @@ data class CompletedSong(
     val durationMillis: Long,
     val createdAtMillis: Long,
     val bpm: Int,
+    val lyricStartsMillis: List<Long> = emptyList(),
 )
 
 /**
- * 생성 결과로 완성곡을 만든다. 제목은 서버 제목 → "단어 노래" → "M월 d일 노래" 순으로 정한다.
- * [heardWord]는 녹음에서 들린 단어로, 서버 단어보다 먼저 쓴다.
+ * 서버 결과로 완성곡을 만든다. 제목은 서버 제목(AI 실패 시 서버가 "첫 단어 + 노래"로 짓는다)을 쓰고,
+ * 비어 오면 "첫 단어 노래" → "M월 d일 노래" 순으로 정한다.
  */
 fun completedSongOf(
-    generated: GeneratedSong,
-    heardWord: String?,
-    nowMillis: Long,
+    result: SongResult,
+    createdAtMillis: Long,
     zone: ZoneId = ZoneId.systemDefault(),
 ): CompletedSong {
-    val word = heardWord?.takeIf { it.isNotBlank() } ?: generated.words.firstOrNull()
-    val title = generated.title ?: word?.let { "$it 노래" } ?: dateTitle(nowMillis, zone)
+    val word = result.words.firstOrNull()?.text?.takeIf { it.isNotBlank() }
+    val title = result.title.takeIf { it.isNotBlank() } ?: word?.let { "$it 노래" } ?: dateTitle(createdAtMillis, zone)
     return CompletedSong(
         title = title,
         highlightWord = word,
-        lyrics = generated.lyrics,
-        durationMillis = TimeUnit.SECONDS.toMillis(generated.durationSec.toLong()),
-        createdAtMillis = nowMillis,
-        bpm = generated.bpm,
+        lyrics = result.lyrics.map { it.text },
+        durationMillis = result.durationMs,
+        createdAtMillis = createdAtMillis,
+        bpm = result.bpm,
+        lyricStartsMillis = result.lyrics.map { it.startMs },
     )
 }
 
@@ -44,7 +48,15 @@ internal fun dateTitle(nowMillis: Long, zone: ZoneId): String {
     return "${date.monthValue}월 ${date.dayOfMonth}일 노래"
 }
 
-/** 지금 부르는 가사 줄. 곡 길이를 줄 수로 똑같이 나눈다. */
+/** 지금 부르는 가사 줄. 줄마다 시작 시간이 있으면 그것으로, 없으면 곡 길이를 줄 수로 똑같이 나눠 고른다. */
+fun lyricIndexAt(song: CompletedSong, elapsedMillis: Long): Int {
+    if (song.lyricStartsMillis.size == song.lyrics.size && song.lyrics.isNotEmpty()) {
+        return song.lyricStartsMillis.indexOfLast { it <= elapsedMillis }.coerceAtLeast(0)
+    }
+    return lyricIndexAt(elapsedMillis, song.durationMillis, song.lyrics.size)
+}
+
+/** 곡 길이를 줄 수로 똑같이 나눠 지금 줄을 고른다. */
 fun lyricIndexAt(elapsedMillis: Long, durationMillis: Long, lineCount: Int): Int {
     if (lineCount <= 0 || durationMillis <= 0) return 0
     val index = (elapsedMillis.coerceIn(0, durationMillis) * lineCount / durationMillis).toInt()

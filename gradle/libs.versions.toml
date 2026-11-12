@@ -9,6 +9,8 @@ coroutines = "1.9.0"
 # 1.77.3은 compileSdk 37을 요구한다. 빌드 환경을 올리기 전까지 올리지 않는다.
 filament = "1.75.1"
 junit = "4.13.2"
+# 단위 테스트에서 서버 응답(JSON) 읽기를 확인할 때만 쓴다. 앱은 안드로이드에 들어 있는 org.json을 쓴다
+orgJson = "20240303"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -22,6 +24,7 @@ androidx-navigation-compose = { group = "androidx.navigation", name = "navigatio
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 filament-utils-android = { group = "com.google.android.filament", name = "filament-utils-android", version.ref = "filament" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

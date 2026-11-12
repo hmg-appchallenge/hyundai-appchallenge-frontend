@@ -1,11 +1,16 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,7 +31,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
@@ -36,23 +42,34 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.R
+import com.hmgappchallenge.kidsrhythm.audio.BeatPlayer
+import com.hmgappchallenge.kidsrhythm.beat.beatTypeForBpm
+import com.hmgappchallenge.kidsrhythm.beat.bpmForSpeed
 import com.hmgappchallenge.kidsrhythm.family.FamilyMember
 import com.hmgappchallenge.kidsrhythm.recording.FakeRecording
+import com.hmgappchallenge.kidsrhythm.recording.RecordingController
 import com.hmgappchallenge.kidsrhythm.recording.RecordingSnapshot
 import com.hmgappchallenge.kidsrhythm.recording.formatElapsed
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.LoadingSpinner
+import com.hmgappchallenge.kidsrhythm.ui.component.MessagePopup
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
 import com.hmgappchallenge.kidsrhythm.ui.component.VoiceCard
 import com.hmgappchallenge.kidsrhythm.ui.component.VoiceCardState
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
+import kotlin.math.abs
+import kotlinx.coroutines.launch
 
 private val WaveformShape = RoundedCornerShape(32.dp)
 private val ChipShape = RoundedCornerShape(16.dp)
@@ -63,43 +80,150 @@ private val BarGap = 10.dp
 private val PlayheadDotSize = 18.dp
 
 /**
- * S04 녹음. 경과 시간을 들고 있다가 멈추기를 누르면 시간을 멈춘다.
- * [onComplete]에는 녹음에서 처음 들린 단어를 넘긴다. 없으면 null.
+ * S04 녹음. 마이크로 녹음하면서 2초마다 서버로 보내고, 돌아온 결과로 연주 중인 가족과 들린 단어를 보여 준다.
+ * 완성하기를 누르면 노래 작업 번호와 처음 들린 단어를 [onComplete]로 넘긴다.
  */
 @Composable
-fun RecordingRoute(family: List<FamilyMember>, onBack: () -> Unit, onComplete: (firstWord: String?) -> Unit) {
-    var elapsedMillis by rememberSaveable { mutableLongStateOf(0L) }
-    var isPaused by rememberSaveable { mutableStateOf(false) }
+fun RecordingRoute(
+    family: List<FamilyMember>,
+    services: AppServices,
+    speedKmh: Float,
+    outsideTemperature: Float?,
+    onBack: () -> Unit,
+    onComplete: (songId: String, firstWord: String?) -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val controller = remember { RecordingController(services.songService, services.newRecorder(), services.sounds, scope, services.appScope) }
+    val currentSpeed by rememberUpdatedState(speedKmh)
+    val currentTemperature by rememberUpdatedState(outsideTemperature)
+    controller.vehicle = { currentSpeed to currentTemperature }
+
+    var hasPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    var permissionDenied by remember { mutableStateOf(false) }
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        hasPermission = granted
+        permissionDenied = !granted
+    }
+    LaunchedEffect(hasPermission) {
+        if (hasPermission) controller.start(family) else if (!permissionDenied) permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+    // 녹음하는 동안 비트는 작게 (마이크로 들어가지 않게)
+    DisposableEffect(Unit) {
+        services.beatPlayer.playForSpeed(speedKmh)
+        services.beatPlayer.setVolume(BeatPlayer.RECORDING_VOLUME)
+        onDispose { services.beatPlayer.setVolume(BeatPlayer.DEFAULT_VOLUME) }
+    }
     // 백그라운드로 가면 녹음을 멈춘다. 돌아와서는 사용자가 계속하기로 다시 시작한다
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) isPaused = true
+            if (event == Lifecycle.Event.ON_STOP) controller.pause()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
-    // TODO(오디오): VoiceInput으로 실제 마이크 녹음을 시작·일시정지하고, 완성하기에서 녹음 파일을 넘긴다
-    // 매 프레임 시간을 흘려 파형이 부드럽게 밀린다. 화면이 그려지지 않는 동안에는 프레임도 멈춘다
-    LaunchedEffect(isPaused) {
-        if (isPaused) return@LaunchedEffect
+    // 완성하지 않고 화면을 떠나면 서버에 모아 둔 녹음을 지운다
+    DisposableEffect(controller) { onDispose { controller.cancel() } }
+
+    // 매 프레임 시간을 흘려 파형이 부드럽게 밀린다
+    var elapsedMillis by remember { mutableLongStateOf(0L) }
+    val ticking = controller.phase == RecordingController.Phase.Recording && !controller.isPaused
+    LaunchedEffect(ticking) {
+        if (!ticking) {
+            // 멈추면 실제로 녹음된 시간으로 맞춘다 (3분을 다 쓰면 02:59가 아니라 03:00)
+            elapsedMillis = controller.recordedMillis
+            return@LaunchedEffect
+        }
         var last = withFrameMillis { it }
         while (true) {
             withFrameMillis { now ->
-                elapsedMillis += now - last
+                val next = elapsedMillis + (now - last)
+                // 실제로 녹음된 시간과 0.8초 넘게 어긋나면 맞춘다 (다시 녹음해서 0초부터 시작할 때 등)
+                elapsedMillis = if (abs(next - controller.recordedMillis) > 800) controller.recordedMillis else next
                 last = now
             }
         }
     }
-    val snapshot = remember(elapsedMillis) { FakeRecording.snapshot(elapsedMillis) }
+    LaunchedEffect(controller.phase) {
+        if (controller.phase == RecordingController.Phase.Connecting) elapsedMillis = 0L
+    }
+    val completeWith: (String?) -> Unit = { songId ->
+        if (songId != null) onComplete(songId, controller.firstNoun ?: controller.heardWords.firstOrNull())
+    }
+    val recording = controller.phase == RecordingController.Phase.Recording
     RecordingScreen(
         family = family,
-        snapshot = snapshot,
-        isPaused = isPaused,
+        snapshot = controller.snapshot(elapsedMillis),
+        isPaused = controller.isPaused || !recording,
+        canResume = !controller.isAtLimit,
+        statusNote = controller.warning,
         onBack = onBack,
-        onComplete = { onComplete(snapshot.heardWords.firstOrNull()) },
-        onTogglePause = { isPaused = !isPaused },
+        onComplete = {
+            if (recording) {
+                scope.launch {
+                    val bpm = bpmForSpeed(currentSpeed)
+                    completeWith(controller.complete(bpm, beatTypeForBpm(bpm)))
+                }
+            }
+        },
+        onTogglePause = controller::togglePause,
+        overlay = {
+            when {
+                permissionDenied -> MessagePopup(
+                    title = "마이크 권한이 필요해요",
+                    message = "노래를 만들려면 가족 목소리를 녹음해야 해요. 마이크 사용을 허용해 주세요.",
+                    primaryText = "다시 요청하기",
+                    onPrimary = {
+                        permissionDenied = false
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    },
+                    secondaryText = "나가기",
+                    onSecondary = onBack,
+                )
+                // 완성하기 요청만 실패했으면 녹음을 버리지 않고 다시 보낸다
+                controller.phase == RecordingController.Phase.Failed && controller.canRetryFinish -> MessagePopup(
+                    title = "노래를 아직 보내지 못했어요",
+                    message = controller.errorMessage ?: "잠시 후 다시 완성해 주세요.",
+                    primaryText = "다시 완성하기",
+                    onPrimary = { scope.launch { completeWith(controller.retryFinish()) } },
+                    secondaryText = "나가기",
+                    onSecondary = onBack,
+                )
+                controller.phase == RecordingController.Phase.Failed -> MessagePopup(
+                    title = "녹음을 이어 갈 수 없어요",
+                    message = controller.errorMessage ?: "잠시 후 다시 시도해 주세요.",
+                    primaryText = "다시 시도",
+                    onPrimary = { controller.start(family) },
+                    secondaryText = "나가기",
+                    onSecondary = onBack,
+                )
+                controller.phase == RecordingController.Phase.Connecting -> BusyChip("노래 서버에 연결하는 중이에요")
+                controller.phase == RecordingController.Phase.Finishing -> BusyChip("녹음을 마무리하는 중이에요")
+            }
+        },
     )
+}
+
+/** 화면 가운데 위쪽에 잠깐 띄우는 진행 안내. */
+@Composable
+private fun BoxScope.BusyChip(text: String) {
+    Row(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .padding(top = 40.dp)
+            .clip(CircleShape)
+            .background(AppColors.SurfaceBasic)
+            .border(BORDER_WIDTH, AppColors.BasicAlphaLight100, CircleShape)
+            .padding(horizontal = 32.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LoadingSpinner(size = 40.dp, contentDescription = null)
+        Text(text = text, style = AppTypography.BodySmallStrong, color = AppColors.TextDarkSecondary)
+    }
 }
 
 @Composable
@@ -110,10 +234,14 @@ fun RecordingScreen(
     onBack: () -> Unit,
     onComplete: () -> Unit,
     onTogglePause: () -> Unit,
+    /** 녹음할 수 있는 시간이 남았는지. 다 쓰면 계속하기를 막고 완성하기만 남긴다. */
+    canResume: Boolean = true,
+    statusNote: String? = null,
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
-    SubPage(title = "같이 노래해요", onBack = onBack) {
+    SubPage(title = "같이 노래해요", onBack = onBack, overlay = overlay) {
         Column(modifier = Modifier.weight(1f)) {
-            RecordingStatus(elapsedMillis = snapshot.elapsedMillis, isPaused = isPaused)
+            RecordingStatus(elapsedMillis = snapshot.elapsedMillis, isPaused = isPaused, note = statusNote)
             Waveform(
                 levelHeights = snapshot.levelHeights,
                 // 다음 막대가 붙기까지 얼마나 왔는지 (0~1)
@@ -150,6 +278,7 @@ fun RecordingScreen(
             LargeButton(
                 text = if (isPaused) "계속하기" else "멈추기",
                 onClick = onTogglePause,
+                enabled = !isPaused || canResume,
                 icon = if (isPaused) R.drawable.ic_play else R.drawable.ic_pause,
                 variant = LargeButtonVariant.Secondary,
                 modifier = Modifier.width(599.dp),
@@ -159,7 +288,7 @@ fun RecordingScreen(
 }
 
 @Composable
-private fun RecordingStatus(elapsedMillis: Long, isPaused: Boolean) {
+private fun RecordingStatus(elapsedMillis: Long, isPaused: Boolean, note: String?) {
     Row(
         modifier = Modifier.height(100.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -172,6 +301,10 @@ private fun RecordingStatus(elapsedMillis: Long, isPaused: Boolean) {
         )
         Text(text = if (isPaused) "잠시 멈춤" else "녹음 중", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
         Text(text = formatElapsed(elapsedMillis), style = AppTypography.TitleLargeNormal, color = AppColors.TextDarkTertiary)
+        if (note != null) {
+            Spacer(Modifier.width(24.dp))
+            Text(text = note, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative)
+        }
     }
 }
 

@@ -21,6 +21,12 @@ fun speedZoneFor(speedKmh: Float): SpeedZone = when {
 /** 속도 구간 칩 글자. 예: "시내 · 8비트" */
 fun speedZoneLabel(speedKmh: Float): String = speedZoneFor(speedKmh).let { "${it.label} · ${it.beats}비트" }
 
+/** 속도 구간의 비트 (2·4·8·16비트). 리듬을 얼마나 잘게 쪼개는지이고, 박자는 항상 4/4다. 서버 `beatType` 값이다. */
+fun beatTypeForSpeed(speedKmh: Float): Int = speedZoneFor(speedKmh).beats
+
+/** BPM으로 비트를 고른다. S03에서 들려준 BPM과 같은 비트를 서버에 보내려고 쓴다 (docs/API.md "속도 → 비트 표"). */
+fun beatTypeForBpm(bpm: Int): Int = speedZoneForBpm(bpm).beats
+
 /** 완성곡 BPM(80 · 95 · 110 · 125)이 어느 구간인지. 사이 값은 가까운 구간으로 본다. */
 fun speedZoneForBpm(bpm: Int): SpeedZone = when {
     bpm < 88 -> SpeedZone.STOP

@@ -14,9 +14,23 @@ val keystoreProperties = Properties().apply {
     }
 }
 
+// AI 서버 주소와 키. 저장소에 올리지 않는 local.properties에 적으면 바꿀 수 있다.
+//   kidsrhythm.serverUrl=http://192.168.0.10:8000   (기본: 에뮬레이터에서 본 이 PC, http://10.0.2.2:8000)
+//   kidsrhythm.apiKey=...                            (서버에 KR_API_KEY를 정했을 때만)
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        file.inputStream().use { load(it) }
+    }
+}
+val serverUrl: String = localProperties.getProperty("kidsrhythm.serverUrl") ?: "http://10.0.2.2:8000"
+val serverApiKey: String = localProperties.getProperty("kidsrhythm.apiKey") ?: ""
+
 android {
     namespace = "com.hmgappchallenge.kidsrhythm"
     compileSdk = 35
+    // AAOS Car API (속도·바깥 온도·주행 제한). SDK 플랫폼의 optional/android.car.jar를 쓴다
+    useLibrary("android.car")
 
     defaultConfig {
         applicationId = "com.hmgappchallenge.kidsrhythm"
@@ -25,6 +39,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "0.1.0"
+
+        buildConfigField("String", "SERVER_URL", "\"$serverUrl\"")
+        buildConfigField("String", "SERVER_API_KEY", "\"$serverApiKey\"")
     }
 
     signingConfigs {
@@ -55,6 +72,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -72,4 +90,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+    // 단위 테스트는 android.jar의 org.json이 비어 있어서(Stub) 진짜 구현을 넣는다
+    testImplementation(libs.org.json)
 }

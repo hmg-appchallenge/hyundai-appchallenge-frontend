@@ -78,6 +78,15 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.DisposableEffect
+import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
+import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
+import com.hmgappchallenge.kidsrhythm.family.FamilyMember
+import com.hmgappchallenge.kidsrhythm.completed.completedSongOf
+import com.hmgappchallenge.kidsrhythm.archive.ArchivedMember
+import com.hmgappchallenge.kidsrhythm.AppServices
 
 private val StageShape = RoundedCornerShape(48.dp)
 private val PillShape = RoundedCornerShape(32.dp)
@@ -103,35 +112,83 @@ private val ParticleStartRadius = 200.dp
 private val ShrinkLabelStyle = AppTypography.TitleMedium.copy(fontWeight = FontWeight.ExtraBold)
 private val PlayerMetaStyle = AppTypography.LabelMedium.copy(fontSize = 22.sp)
 
-/**
- * S06 노래 완성. 고른 친구가 무대에서 춤추고, 아래에서 지금 가사 한 줄과 미니 플레이어를 보여 준다.
- * 소리 재생이 아직 없어서 재생 위치는 시간으로 흉내 낸다.
- */
+/** S06 완성. 받아 둔 노래를 바로 틀고, 보관함에 저장하거나 한 곡 더 만든다. */
+@Composable
+fun CompletedRoute(
+    services: AppServices,
+    family: List<FamilyMember>,
+    character: MascotCharacter,
+    onSaved: () -> Unit,
+    onMakeAnother: () -> Unit,
+    onChangeCharacter: () -> Unit,
+    onBack: () -> Unit,
+) {
+    // 처음 들어올 때의 곡을 붙잡아 둔다. 저장하면서 completedSong을 비워도 이 화면이 '곡 없음'으로 홈에 돌아가지 않게
+    val received = remember { services.completedSong }
+    if (received == null) {
+        LaunchedEffect(Unit) { onBack() }
+        return
+    }
+    val song = remember(received) { completedSongOf(received.result, received.createdAtMillis) }
+    val membersLabel = remember(received, family) {
+        received.result.members.joinToString(" · ") { m ->
+            val name = family.firstOrNull { it.id == m.memberId }?.name.orEmpty()
+            val instrument = Instrument.entries.firstOrNull { it.name == m.instrument }?.label ?: m.instrument
+            "$name $instrument".trim()
+        }
+    }
+    val player = services.player
+    val scope = rememberCoroutineScope()
+    var saving by remember { mutableStateOf(false) }
+    LaunchedEffect(received.songId) {
+        services.beatPlayer.stop()
+        player.load(received.audioFile.path, autoplay = true, knownDurationMs = received.result.durationMs)
+    }
+    DisposableEffect(Unit) { onDispose { player.pause() } }
+    PlayerTicker(player)
+    CompletedScreen(
+        song = song,
+        character = character,
+        membersLabel = membersLabel,
+        isPlaying = player.isPlaying,
+        positionMillis = player.positionMs,
+        saving = saving,
+        onTogglePlay = player::toggle,
+        onBack = onBack,
+        onChangeCharacter = onChangeCharacter,
+        onSave = {
+            if (!saving) {
+                saving = true
+                scope.launch {
+                    val members = received.result.members.map { m ->
+                        ArchivedMember(m.memberId, family.firstOrNull { it.id == m.memberId }?.name.orEmpty(), m.instrument)
+                    }
+                    services.archive.import(received.result, received.audioFile, members, received.createdAtMillis)
+                    services.completedSong = null
+                    onSaved()
+                }
+            }
+        },
+        onMakeAnother = onMakeAnother,
+    )
+}
+
+/** S06 노래 완성. 고른 친구가 무대에서 춤추고, 아래에서 지금 가사 한 줄과 미니 플레이어를 보여 준다. */
 @Composable
 fun CompletedScreen(
     song: CompletedSong,
     character: MascotCharacter,
     membersLabel: String,
+    isPlaying: Boolean,
+    positionMillis: Long,
+    saving: Boolean,
+    onTogglePlay: () -> Unit,
     onBack: () -> Unit,
     onChangeCharacter: () -> Unit,
     onSave: () -> Unit,
     onMakeAnother: () -> Unit,
 ) {
-    // TODO(오디오): 받은 mp3를 실제로 재생하고 그 위치를 쓴다
-    var isPlaying by remember { mutableStateOf(true) }
-    var positionMillis by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(isPlaying) {
-        if (!isPlaying) return@LaunchedEffect
-        var last = withFrameMillis { it }
-        while (positionMillis < song.durationMillis) {
-            withFrameMillis { now ->
-                positionMillis = (positionMillis + (now - last)).coerceAtMost(song.durationMillis)
-                last = now
-            }
-        }
-        isPlaying = false
-    }
-    val lyric = song.lyrics.getOrNull(lyricIndexAt(positionMillis, song.durationMillis, song.lyrics.size)).orEmpty()
+    val lyric = song.lyrics.getOrNull(lyricIndexAt(song, positionMillis)).orEmpty()
 
     SubPage(
         title = "완성!",
@@ -167,7 +224,13 @@ fun CompletedScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LyricLine(lyric, song.highlightWord, modifier = Modifier.weight(1f))
-            LargeButton(text = "보관함에 저장", onClick = onSave, icon = R.drawable.ic_save, modifier = Modifier.width(320.dp))
+            LargeButton(
+                text = if (saving) "저장하는 중" else "보관함에 저장",
+                onClick = onSave,
+                enabled = !saving,
+                icon = R.drawable.ic_save,
+                modifier = Modifier.width(320.dp),
+            )
             LargeButton(
                 text = "한 곡 더",
                 onClick = onMakeAnother,
@@ -183,11 +246,7 @@ fun CompletedScreen(
             positionMillis = positionMillis,
             durationMillis = song.durationMillis,
             isPlaying = isPlaying,
-            onTogglePlay = {
-                // 끝까지 들은 뒤 다시 누르면 처음부터 듣는다
-                if (!isPlaying && positionMillis >= song.durationMillis) positionMillis = 0
-                isPlaying = !isPlaying
-            },
+            onTogglePlay = onTogglePlay,
         )
     }
 }
@@ -394,6 +453,10 @@ private fun CompletedScreenPreview() {
         song = CompletedSong("사과 노래", "사과", listOf("사과는 빨갛다, 둥둥 둥둥"), 102_000, 0, bpm = 110),
         character = MascotCharacter.LION,
         membersLabel = "엄마 북 · 첫째 탬버린 · 둘째 셰이커",
+        isPlaying = true,
+        positionMillis = 0,
+        saving = false,
+        onTogglePlay = {},
         onBack = {},
         onChangeCharacter = {},
         onSave = {},

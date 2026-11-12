@@ -1,7 +1,9 @@
 package com.hmgappchallenge.kidsrhythm.completed
 
 import com.hmgappchallenge.kidsrhythm.family.FamilyMember
-import com.hmgappchallenge.kidsrhythm.server.GeneratedSong
+import com.hmgappchallenge.kidsrhythm.server.HeardWord
+import com.hmgappchallenge.kidsrhythm.server.LyricLine
+import com.hmgappchallenge.kidsrhythm.server.SongResult
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import java.time.LocalDate
 import java.time.ZoneId
@@ -13,28 +15,35 @@ class CompletedSongTest {
     private val zone: ZoneId = ZoneOffset.UTC
     private val nov11 = LocalDate.of(2026, 11, 11).atStartOfDay(zone).toInstant().toEpochMilli()
 
-    private fun generated(title: String? = null, words: List<String> = emptyList()) = GeneratedSong(
-        title = title, words = words, onomatopoeia = emptyList(), bpm = 110, durationSec = 102,
-        lyrics = listOf("가", "나", "다", "라"), audioUrl = "",
+    private fun result(title: String = "", words: List<String> = emptyList()) = SongResult(
+        title = title, durationMs = 102_000, bpm = 110, beatType = 8, firstBeatMs = 0,
+        lyrics = listOf(0L, 10_000L, 40_000L).mapIndexed { i, start -> LyricLine("줄$i", start, start + 10_000, "verse", emptyList()) },
+        words = words.map { HeardWord(it, null, "word") }, onomatopoeia = emptyList(), members = emptyList(), audioUrl = "",
     )
 
     @Test
-    fun `서버 제목이 있으면 그대로 쓴다`() {
-        assertEquals("빨간 사과 노래", completedSongOf(generated(title = "빨간 사과 노래"), "사과", nov11, zone).title)
-    }
-
-    @Test
-    fun `서버 제목이 없으면 들린 단어로 단어 노래 제목을 짓는다`() {
-        val song = completedSongOf(generated(words = listOf("엄마")), heardWord = "사과", nowMillis = nov11, zone = zone)
-        assertEquals("사과 노래", song.title)
+    fun `서버 제목이 있으면 그대로 쓰고 첫 단어를 강조한다`() {
+        val song = completedSongOf(result(title = "빨간 사과 노래", words = listOf("사과", "엄마")), nov11, zone)
+        assertEquals("빨간 사과 노래", song.title)
         assertEquals("사과", song.highlightWord)
     }
 
     @Test
-    fun `들린 단어가 없으면 날짜 제목을 붙인다`() {
-        val song = completedSongOf(generated(), heardWord = null, nowMillis = nov11, zone = zone)
+    fun `서버 제목이 비어 오면 첫 단어로 단어 노래 제목을 짓는다`() {
+        assertEquals("사과 노래", completedSongOf(result(words = listOf("사과")), nov11, zone).title)
+    }
+
+    @Test
+    fun `들린 단어도 없으면 날짜 제목을 붙인다`() {
+        val song = completedSongOf(result(), nov11, zone)
         assertEquals("11월 11일 노래", song.title)
         assertEquals(null, song.highlightWord)
+    }
+
+    @Test
+    fun `가사 줄은 서버가 준 시작 시간에 맞춰 넘어간다`() {
+        val song = completedSongOf(result(), nov11, zone)
+        assertEquals(listOf(0, 0, 1, 1, 2), listOf(0L, 9_999L, 10_000L, 39_999L, 90_000L).map { lyricIndexAt(song, it) })
     }
 
     @Test

@@ -15,8 +15,7 @@ enum class StepState { Done, Active, Pending }
  * 단계 진행을 시간으로 흉내 낸다.
  * 결과가 오기 전에는 [STEP_MILLIS]마다 한 단계씩 넘기되 마지막 단계에서 기다리고,
  * 결과가 오면 남은 단계를 [FINISH_STEP_MILLIS]마다 하나씩 빠르게 채운다.
- *
- * TODO(AI 서버): 서버가 단계별 진행 상태를 주면 그 값으로 바꾼다
+ * 서버와 연결된 화면은 서버가 알려 준 단계([doneCountForServer])를 쓰고, 시간 흉내([doneCount])는 미리보기용이다.
  */
 object GenerationProgress {
     const val STEP_MILLIS = 2_000L
@@ -42,6 +41,16 @@ object GenerationProgress {
     }
 
     fun isComplete(doneCount: Int): Boolean = doneCount >= steps.size
+
+    /**
+     * 서버가 알려 준 단계로 끝난 단계 수를 정한다 (docs/API.md 5번).
+     * 지금 단계 앞까지가 끝난 단계이고, 완성(DONE)이면 모두 끝난 것이다.
+     */
+    fun doneCountForServer(step: String?, status: String): Int {
+        if (status == "DONE") return steps.size
+        val index = steps.indexOfFirst { it.name == step }
+        return if (index < 0) 0 else index
+    }
 
     fun stateOf(index: Int, doneCount: Int): StepState = when {
         index < doneCount -> StepState.Done

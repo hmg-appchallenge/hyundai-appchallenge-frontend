@@ -42,21 +42,23 @@
 | 역할 | 위치 |
 |---|---|
 | 화면·라우트 | `ui/screen/`, `navigation/AppNavHost.kt` |
-| 기능 모듈 | `beat/`, `vehicle/`, `audio/`, `archive/` |
-| API 호출 | `server/` |
-| 전역 상태 | 아직 없음 |
-| 공용 컴포넌트 | `ui/component/` |
+| 기능 모듈 | `beat/`, `vehicle/`, `audio/`, `archive/`, `recording/`, `family/` |
+| API 호출 | `server/` (`SongService` 인터페이스, `SongApi` HTTP 구현, `SongModels`의 `SongJson`) |
+| 전역 상태 | `AppServices.kt` (서버·보관함·가족·차량·소리를 앱에 하나씩 두고, S05→S06 완성곡과 고른 친구를 들고 있다) |
+| 공용 컴포넌트 | `ui/component/` (가사·재생 막대·춤추는 친구는 `SongParts.kt`) |
 | 아이콘 | 아직 없음 (`app/src/main/res/drawable/`에 추가) |
-| mocks 위치 | `server/SongGenerator.kt`의 `FakeSongGenerator` |
+| 소리 파일 | `app/src/main/res/raw/` (비트·악기 wav. 노래 엔진에서 뽑는다, `docs/API.md` "앱에 넣은 소리 파일") |
+| mocks 위치 | `server/FakeSongService.kt`, 미리보기 데이터 `recording/FakeRecording.kt`·`family/Family.kt`의 `FakeFamily`·`vehicle/FakeVehicleSignals.kt` |
 | 스타일·테마 | `ui/theme/AppTheme.kt` |
 
 ### 외부 소스
 
 | 항목 | 값 |
 |---|---|
-| API 스키마 | 미정 (기획서 07번의 응답 초안만 있음, 추정하지 말고 AI 서버 담당자에게 확인) |
-| 모킹 스위치 | `MainActivity.kt`의 `SongGenerator` 구현체 |
-| 디자인 소스 | [Figma](https://www.figma.com/design/OIYJSznIEBAgnsbyMlrFOh) (기획 페이지에 명세, UI 시안은 아직 없음) |
+| API 스키마 | `docs/API.md` (AI 서버 담당과 같이 고친다. 명세에 없는 값은 추정하지 말고 확인) |
+| 모킹 스위치 | `AppServices.kt`의 `songService` (`SongApi` ↔ `FakeSongService`). 또는 서버를 mock 모드로 켠다 |
+| 서버 주소 | `local.properties`의 `kidsrhythm.serverUrl` (기본 `http://10.0.2.2:8000`), `kidsrhythm.apiKey` |
+| 디자인 소스 | [Figma](https://www.figma.com/design/OIYJSznIEBAgnsbyMlrFOh) (기획 페이지에 명세, UI 시안) |
 | 테스트 도구 | JUnit, adb + uiautomator |
 
 ### 문서 동기화
@@ -65,6 +67,8 @@
 
 - 서비스명 변경: `app/src/main/res/values/strings.xml`의 `app_name`, `README.md`, 이 문서 제목
 - 빌드 환경 변경(SDK·JDK): `app/build.gradle.kts`, `README.md`, `.github/workflows/ci.yml`
+- 서버 응답 형식 변경: `docs/API.md`, `server/SongModels.kt`(`SongJson`), `app/src/test/.../server/SongJsonTest.kt`
+- 속도 구간·비트 변경: `beat/SpeedBand.kt`, `beat/BpmMapper.kt`, `docs/API.md` "속도 → 비트 표", `res/raw/beat_*.wav`
 
 ### 고유 규칙
 

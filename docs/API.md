@@ -1,0 +1,401 @@
+# 노래 생성 서버 API (v0.4)
+
+앱(프론트엔드)과 노래 생성 서버(AI·백엔드)가 주고받는 형식이에요. 피그마 시안(S02 목소리 등록, S04 녹음, S06 완성, S07 보관함·다시 듣기)을 기준으로 맞췄고, 앱은 `server/SongApi.kt`가 이 명세대로 불러요 (아래 "앱 구현 위치").
+"확인 필요" 표시가 있는 항목은 팀이 정하면 바꿔요.
+
+## 11/12 보강
+
+- 앱 연동 질문(멤버 등록, 악기 코드, 단계, 제목, 토큰, 녹음 형식, 폴링, 동의 철회)의 답을 맨 아래 "자주 묻는 것"에 모았어요.
+- 심사용 고정 주소는 서버 PC에서 ngrok 고정 주소나 Cloudflare 터널로 정하는 중이에요. 정해지면 "접속"에 적어요. 바깥 주소로 올 때는 팀 키(`X-Api-Key`)가 꼭 있어야 하고, 같은 PC의 에뮬레이터는 지금처럼 키 없이 돼요.
+- 11/12 Hugging Face Space(CPU 8코어)에 올려 시험했을 때 완성하기부터 노래까지 18.8초(16초 녹음)였어요. 이 노트북 서버는 30~65초예요. 그 Space는 지금 멈춰 뒀어요.
+- 서버 코드는 백엔드 저장소(https://github.com/hmg-appchallenge/hyundai-appchallenge-backend)에 있어요. 켜져 있는 서버 주소 뒤에 `/docs`를 붙이면 엔드포인트 목록(Swagger)도 볼 수 있어요. 요청·응답 형식은 이 문서가 기준이에요.
+- `GET /v1/health`에 `auth`(서버가 팀 키를 쓰는지)가 생겼어요.
+- 완성곡 `title`은 Claude가 가사를 보고 지어요 (예: "둥둥 자동차"). 외부 생성이 안 될 때만 "첫 단어 + 노래"예요.
+- main의 최신 화면 작업에 맞췄어요: 악기 12종(서버 악기 소리, 앱 미리 듣기·치는 소리 wav 포함), 속도 구간 이름 정차·골목·시내·고속.
+
+## v0.4에서 바뀐 것 (11/11 밤)
+
+- **노래를 외부 AI로 만들어요.** 가사와 제목은 Claude(`claude-sonnet-5-5`)가, 반주와 보컬은 ElevenLabs Music(`music_v2_5`)이 만들어요. 앱이 받는 형식(5번 결과)은 그대로라 앱은 바꿀 게 없어요.
+  - 가사는 가족이 녹음 중에 실제로 한 말(받아쓴 문장 전체)을 엮어서 만들어요. 가사 낱말의 90% 이상이 실제로 한 말이어야 하고(조사·어미 차이는 같은 말로 봐요), 서버가 비율을 재서 모자라면 Claude에 한 번 더 시켜요. 결과 `engine.lyricsReuse`에 비율이 있어요. 사람 이름은 빼거나 "친구"로 바꿔요.
+  - 주행 데이터는 코드가 정한 스타일로 넘겨요: 속도 → BPM, `beatType` → 리듬 느낌, 정차가 잦으면 셔플, 날짜·바깥 온도 → 계절 악기, 소리 낸 가족의 악기 → 악기 소리.
+  - 아이 목소리: 녹음에서 잘라 낸 의성어·단어 조각을 완성곡 인트로와 노래가 비는 박자에 얹어요.
+  - 가사 줄 시간은 ElevenLabs가 돌려주는 단어 시간으로 맞춰요.
+  - 외부로 나가는 건 **글자뿐**이에요 (받아쓴 문장, 들린 명사·의성어, 계절·빠르기). 녹음 소리와 목소리 특징은 나가지 않아요. 동의 문구에 "가사와 노래를 만들 때 외부 AI(Claude, ElevenLabs)에 들린 단어를 보내요"를 더해야 해요 (확인 필요 1과 같이 정해요).
+  - 외부 호출이 실패하면 서버 안 엔진(서술 틀 가사 + 합성 반주)으로 대신 만들어요. 데모 중에 인터넷이 끊겨도 노래는 나와요.
+- 서버 키는 서버 PC의 `ai-keys.env`에만 둬요 (`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`, `MOCK_GENERATION`). 앱에는 외부 키가 없어요. `MOCK_GENERATION=1`이면 외부를 부르지 않고 서버 안 엔진으로 만들어요.
+- 결과 `engine`에 `generator`(`elevenlabs:music_v2_5` 또는 없음), `lyricsBy`(`claude:…` 또는 `template`), `songId`가 생겼어요. 디버그용이라 앱은 안 써도 돼요.
+- 악기 이름은 대소문자를 가리지 않아요 (`drum`도 `DRUM`으로 받아요).
+- 노래 만드는 시간: 외부 생성 자체는 15~20초(가사 7~9초 + 음악 8초)예요. 이 노트북에서는 녹음 끝의 음성 인식이 40초쯤 걸려서 S05가 1분 남짓이에요.
+
+## v0.3에서 바뀐 것 (11/11)
+
+- 앱 쪽 연동을 모두 구현했어요 (녹음 세션, 목소리 등록, 진행 상태, 완성곡 저장, 보관함). 바뀐 파일은 맨 아래 "앱 구현 위치"에 있어요.
+- **완성하기는 다시 불러도 돼요** (3-3). 응답을 못 받고 다시 부르면 새로 만들지 않고 같은 `songId`를 돌려줘요.
+- **조각 하나를 끝내 못 보내도 녹음이 멈추지 않아요** (3-2). 뒤 조각이 3개 쌓이면 서버가 빠진 조각을 건너뛰어요.
+- 완성하기 뒤에 세션을 지우면(3-4) 만들던 노래도 멈춰요.
+- `TIMEOUT` 기준을 240초로 고쳤어요 (실제 서버 값). 에뮬레이터를 같이 켠 노트북에서 노래 하나에 40~50초 걸려요.
+
+## v0.2에서 바뀐 것 (11/11)
+
+- 녹음 중 실시간 표시용 **녹음 세션 API**를 추가했어요 (3번). 시안 S04의 "소리 낸 사람의 악기가 울려요", "지금까지 들린 단어" 때문이에요.
+- 결과 가사에 **줄마다 시작·끝 시간과 강조 위치**를 넣었어요 (5번). 시안의 지금 부르는 줄 강조, '사과' 색 강조, "가사 줄을 누르면 그 부분부터 들어요"에 써요.
+- 결과에 `firstBeatMs`를 넣었어요. 캐릭터 춤을 박자에 맞출 때 써요.
+- `beatsPerBar`를 `beatType`으로 바꿨어요. 8비트는 한 마디에 8박이라는 뜻이 아니라서요.
+- 앱에 넣을 소리 파일(베이스 비트, 악기 소리) 제안과 확인 필요 항목을 더했어요.
+
+## 기본 원칙
+
+- **서버는 아무것도 오래 갖고 있지 않아요.** 동의 화면에 적은 약속("녹음 원본은 노래가 완성되면 바로 지우고, 노래는 이 차에만 저장해요")을 서버가 그대로 지켜요.
+  - 녹음(조각 포함): 노래 만들기가 끝나는 즉시(완성·실패·취소 모두) 지워요. 녹음 세션에 10분 동안 조각이 안 오면 그때도 지워요.
+  - 완성된 mp3: 앱이 받아 간 뒤 `DELETE`를 부르면 지워요. 앱이 안 부르더라도 완성 10분 뒤 자동으로 지워요.
+  - 목소리 특징(숫자 배열): 서버는 계산만 해서 돌려주고 저장하지 않아요. 앱이 가족 정보와 함께 기기에 저장하고, 녹음할 때마다 같이 보내요.
+  - 외부 AI(Claude, ElevenLabs)에는 들린 단어와 가사 같은 글자만 보내고, 녹음 소리는 보내지 않아요.
+- 가족 이름은 서버로 보내지 않아요. 서버에는 `memberId`와 악기만 있으면 돼요. (가사에 호칭을 넣을지는 확인 필요 6)
+- 노래 만들기는 시간이 걸려서 **작업 번호를 받고 진행 상태를 물어보는 방식**이에요.
+
+## 접속
+
+| 항목 | 값 |
+|---|---|
+| 주소 | 같은 PC의 에뮬레이터: `http://10.0.2.2:8000`. 다른 곳에서는 서버 PC가 연 https 주소예요. 심사용 고정 주소는 정하는 중이고(백엔드 저장소 README "심사용 고정 주소로 켜 두기"), `share-server.bat`의 임시 주소(`https://….trycloudflare.com`)는 다시 열면 바뀌어요. 앱은 프론트 `local.properties`의 `kidsrhythm.serverUrl`로 바꿔요 |
+| 인증 | 서버에 `KR_API_KEY`를 정하면, 바깥에서 오는 요청(고정 주소, 임시 공개 주소)은 헤더 `X-Api-Key: <팀 공유 키>`가 꼭 있어야 해요 (앱은 `kidsrhythm.apiKey`). 같은 PC에서 바로 온 요청(로컬 서버에 붙은 에뮬레이터)은 키 없이 받아요. `GET /v1/health`는 키 없이 열려요. 키에 만료는 없어요. 팀 키는 저장소에 올리지 않고 따로 전달해요 |
+| 서버 키 | 외부 AI 키(`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`)와 팀 키는 서버 PC의 `ai-keys.env`에만 있어요. 앱에는 외부 AI 키가 없어요 |
+| 형식 | JSON(UTF-8). 시간은 따로 적지 않으면 초 단위, 이름이 `Ms`로 끝나면 밀리초 |
+| 녹음 형식 | PCM 16비트(little endian), 16kHz, 모노. `AudioRecord`로 받은 그대로 |
+
+앱 설정 (프론트엔드, 반영됨):
+- `AndroidManifest.xml`에 `INTERNET`, `RECORD_AUDIO`, 차량 속도·바깥 온도 권한
+- `http://10.0.2.2`는 암호화되지 않은 주소라 `network_security_config`로 이 주소만 허용해요. 디버그 빌드는 같은 와이파이의 PC 주소로도 붙도록 모두 허용해요
+
+## 공통 값
+
+**악기** (앱의 `Instrument` 이름 그대로)
+
+`DRUM` 북 · `TAMBOURINE` 탬버린 · `SHAKER` 셰이커 · `BELL` 벨 · `UKULELE` 우쿨렐레 · `STEELDRUM` 스틸드럼 · `WOODBLOCK` 우드블록 · `GUITAR` 기타 · `HARP` 하프 · `XYLOPHONE` 실로폰 · `PIANO` 피아노 · `MARACAS` 마라카스
+
+시안대로 12종이에요 (앱 `Instrument`, main #22). 대소문자는 가리지 않아요. 서버가 모르는 이름이 오면 북 소리로 대신해요.
+
+**단계** (앱의 `GenerationStep` 이름 그대로)
+
+`FIND_WORDS` 단어 찾기 → `WRITE_LYRICS` 노래 가사 만들기 → `SPLIT_VOICES` 목소리 나누기 → `ADD_INSTRUMENTS` 목소리마다 악기 입히기 → `FINISH` 노래 완성
+
+**상태**: `QUEUED` 대기 · `RUNNING` 만드는 중 · `DONE` 완성 · `FAILED` 실패 · `CANCELED` 취소
+
+**속도 → 비트 표** (앱과 서버가 같은 표를 써요. 피그마 스피드 칩 메모 기준)
+
+| 속도 | BPM | `beatType` | 구간 이름 |
+|---|---|---|---|
+| 0 km/h | 80 | 2 (2비트) | 정차 |
+| 1~30 km/h | 95 | 4 (4비트) | 골목 |
+| 31~70 km/h | 110 | 8 (8비트) | 시내 |
+| 71 km/h 이상 | 125 | 16 (16비트) | 고속 |
+
+`beatType`은 리듬을 얼마나 잘게 쪼개는지예요. 박자는 항상 4/4라서 한 박은 `60000 / bpm` 밀리초, 한 마디는 그 4배예요.
+앱은 `beat/SpeedBand.kt`의 `beatTypeForSpeed`·`beatTypeForBpm`으로 이 표를 써요. S03에서 들려준 BPM을 3-3 `beat`로 보내서 완성곡도 같은 비트가 돼요.
+
+## 1. 서버 상태 확인
+
+`GET /v1/health`
+
+```json
+{ "ok": true, "version": "0.4.1", "auth": true, "mode": "real", "ready": true, "speakerModel": "campplus-zh-en-advanced", "vad": "silero", "error": null }
+```
+
+- `ready`: AI 모델을 다 불러왔는지. 서버를 켠 직후 1~2분은 `false`일 수 있어요 (그동안 온 요청도 받아 두고, 모델이 준비되면 처리해요)
+- `mode`: `real`(진짜 AI) 또는 `mock`(정해진 응답, 앱 연동 시험용)
+- `auth`: 서버가 팀 키를 쓰는지. `true`면 바깥에서 붙을 때 `X-Api-Key`가 있어야 해요. 이 주소(`/v1/health`)만은 키 없이 열려 있어요
+
+## 2. 목소리 특징 만들기 (가족 목소리 등록, S02-2·S02-3)
+
+`POST /v1/voices/embed` (multipart)
+
+| 필드 | 내용 |
+|---|---|
+| `audio` | 등록 녹음. wav 권장. 헤더 없는 PCM(위 녹음 형식)이나 m4a도 받아요 |
+
+응답 `200`
+
+```json
+{
+  "embedding": [0.0132, -0.0841, "... 192개"],
+  "model": "campplus-zh-en-advanced",
+  "speechSec": 6.4,
+  "quality": "ok"
+}
+```
+
+- `quality`가 `ok`가 아니면 다시 녹음하게 해 주세요: `too_short`(말한 시간이 3초 미만), `too_quiet`(소리가 작음), `noisy`(잡음이 큼). 이때 `embedding`은 `null`이에요
+- 서버는 받은 녹음을 응답 직후 지워요
+- 앱은 `embedding`을 그 가족(`FamilyMember`)과 함께 기기에 저장해요. "목소리 다시 등록하기"를 하면 새 값으로 바꿔요
+- 서버의 화자 모델(`model`)이 바뀌면 숫자 배열 길이가 달라져요. 길이가 안 맞는 값은 서버가 '등록 전'으로 보고 넘어가니, 그때는 목소리를 다시 등록하면 돼요
+- 녹음 길이는 확인 필요 4
+
+## 3. 녹음 세션 (S04 같이 노래해요)
+
+녹음하는 동안 2초마다 조각을 보내면, 서버가 누가 말했는지와 새로 들린 단어를 돌려줘요. "완성하기"를 누르면 모아 둔 녹음으로 노래를 만들어요. 녹음하는 동안 미리 처리해 두니까 S05에서 기다리는 시간도 줄어요.
+
+흐름: 녹음 시작 → `POST /v1/sessions` → 2초마다 `POST .../chunks` → 완성하기 → `POST .../finish` → 5번(진행 상태)
+
+### 3-1. 세션 시작
+
+`POST /v1/sessions` (JSON)
+
+```json
+{
+  "members": [
+    { "memberId": 1, "instrument": "DRUM", "embedding": [0.0132, -0.0841] },
+    { "memberId": 2, "instrument": "SHAKER", "embedding": [0.0517, 0.0093] },
+    { "memberId": 3, "instrument": "TAMBOURINE", "embedding": null }
+  ]
+}
+```
+
+- `members`: 최대 4명. `embedding`이 없는 가족(목소리 등록 전)은 녹음하는 동안에는 누군지 몰라요. 완성할 때 서버가 목소리를 비슷한 것끼리 묶어서 남은 악기를 붙여요 (S02-1 안내 문구 "등록 전에는 노래가 완성될 때 목소리를 나눠 악기를 붙여요"와 같은 동작)
+
+응답 `201`
+
+```json
+{ "sessionId": "s8d2f41", "chunkMs": 2000, "maxRecordingSec": 180 }
+```
+
+### 3-2. 녹음 조각 보내기
+
+`POST /v1/sessions/{sessionId}/chunks?seq=12`
+
+본문: 녹음 바이트 그대로 (`Content-Type: application/octet-stream`). 2초면 64,000바이트(16000 × 2바이트 × 2초)예요.
+
+- `seq`는 0부터 1씩 늘려요. 조각은 순서대로 하나씩 보내 주세요
+- 보내다 실패하면 같은 `seq`로 다시 보내요. 같은 `seq`를 두 번 받아도 한 번만 써요
+- 끝내 못 보낸 조각은 건너뛰고 다음 `seq`를 보내도 돼요. 뒤 조각이 3개(6초) 쌓이도록 안 오면 서버가 빠진 조각을 건너뛰어요
+- "녹음 정지"를 누르면 조각을 안 보내면 돼요. "이어서 녹음하기"를 누르면 다음 `seq`부터 이어서 보내요. 서버는 쉰 동안을 빼고 이어 붙여요
+- 녹음이 `maxRecordingSec`(3분)을 넘으면 `413`(`TOO_LONG`)을 돌려줘요. 앱은 3분이 되면 스스로 멈추고 완성하기를 안내해요
+
+응답 `200`
+
+```json
+{
+  "seq": 12,
+  "receivedSec": 26.0,
+  "speaking": [1, 2],
+  "unregisteredVoice": false,
+  "newWords": [
+    { "text": "사과", "memberId": 2, "kind": "word" },
+    { "text": "둥둥", "memberId": 1, "kind": "onomatopoeia" }
+  ]
+}
+```
+
+- `speaking`: 이 조각에서 목소리가 들린 가족이에요. S04 카드를 '연주 중'으로, 나머지는 '대기'로 바꾸고, 앱은 이 가족의 악기 소리를 비트에 맞춰 울려요
+- `unregisteredVoice`: 목소리 등록을 안 한 사람의 목소리가 들렸는지
+- `newWords`: 이번에 새로 찾은 단어예요. "지금까지 들린 단어"에 붙여요. 같은 단어는 한 번만 와요. 누가 말했는지 모르면 `memberId`가 `null`이에요. 아이 노래에 맞지 않는 말(욕·어른 말·무서운 말)과, 자신 없게 들린 낯선 명사(잘못 알아들었을 수 있는 말)는 서버가 빼고 보내요. 가사에도 쓰지 않아요
+- 말이 조각 경계에 걸리면 단어가 다음 조각 응답에 와서, 화면에는 1~3초 늦게 나타날 수 있어요
+
+### 3-3. 완성하기
+
+`POST /v1/sessions/{sessionId}/finish` (JSON). 마지막 조각 응답을 받은 뒤 불러 주세요.
+
+```json
+{
+  "drive": {
+    "speedKmh": [42.0, 41.5, 40.8, 38.0],
+    "intervalSec": 1.0,
+    "outsideTempC": 14.5,
+    "startedAt": "2026-11-11T13:40:00+09:00"
+  },
+  "beat": { "bpm": 110, "beatType": 8 }
+}
+```
+
+- `drive.speedKmh`: 녹음하는 동안 1초마다 잰 속도. 가속·감속 위치를 필인으로 바꾸는 데 써요. 없으면 `beat` 값만 써요
+- `beat`: S03 화면에서 보여 준 값. 완성곡도 이 BPM과 비트로 만들어요
+
+응답 `202`
+
+```json
+{ "songId": "c7f3a9", "status": "QUEUED" }
+```
+
+- 응답을 못 받았으면(연결 끊김 등) 같은 요청을 다시 보내도 돼요. 새로 만들지 않고 같은 `songId`를 돌려줘요. 앱은 S04에서 "다시 완성하기"로 이걸 해요
+
+### 3-4. 녹음 그만두기
+
+`DELETE /v1/sessions/{sessionId}` → `204`
+
+S04에서 뒤로 가면 불러 주세요. 모아 둔 조각을 바로 지워요. 완성하기를 부른 뒤라면 만들던 노래도 멈추고 지워요.
+
+## 4. 녹음 파일 하나로 노래 만들기 (테스트·예비용)
+
+실시간 표시 없이 녹음 파일 하나를 통째로 보낼 때 써요. 연동 테스트나, 녹음 세션이 안 될 때를 위한 길이에요.
+
+`POST /v1/songs` (multipart)
+
+| 필드 | 내용 |
+|---|---|
+| `recording` | 녹음 전체. wav 권장. 헤더 없는 PCM(위 녹음 형식)도 받아요 |
+| `meta` | 3-1의 `members`와 3-3의 `drive`, `beat`를 합친 JSON 문자열 |
+
+응답 `202`는 3-3과 같아요.
+
+## 5. 진행 상태와 결과 (S05 → S06)
+
+`GET /v1/songs/{songId}`
+
+앱은 S05에 있는 동안 1초마다 불러요. `step`을 `GenerationProgress` 대신 써서 단계 표시를 진짜로 바꿔요.
+
+만드는 중:
+
+```json
+{ "songId": "c7f3a9", "status": "RUNNING", "step": "SPLIT_VOICES", "progress": 0.55, "result": null, "error": null }
+```
+
+완성 (`DONE`):
+
+```json
+{
+  "songId": "c7f3a9",
+  "status": "DONE",
+  "step": "FINISH",
+  "progress": 1.0,
+  "result": {
+    "title": "사과 노래",
+    "durationMs": 102000,
+    "bpm": 110,
+    "beatType": 8,
+    "firstBeatMs": 0,
+    "lyrics": [
+      {
+        "text": "사과는 빨갛다, 둥둥 둥둥",
+        "startMs": 4364,
+        "endMs": 8727,
+        "section": "verse",
+        "highlights": [
+          { "start": 0, "end": 2, "memberId": 2, "kind": "word" },
+          { "start": 9, "end": 11, "memberId": 1, "kind": "onomatopoeia" },
+          { "start": 12, "end": 14, "memberId": 1, "kind": "onomatopoeia" }
+        ]
+      },
+      {
+        "text": "사과는 맛있다, 랄랄라 랄라",
+        "startMs": 8727,
+        "endMs": 13091,
+        "section": "verse",
+        "highlights": [
+          { "start": 0, "end": 2, "memberId": 2, "kind": "word" },
+          { "start": 9, "end": 12, "memberId": 3, "kind": "onomatopoeia" }
+        ]
+      }
+    ],
+    "words": [{ "text": "사과", "memberId": 2 }],
+    "onomatopoeia": [{ "text": "둥둥", "memberId": 1 }, { "text": "랄랄라", "memberId": 3 }],
+    "members": [
+      { "memberId": 1, "instrument": "DRUM", "speechSec": 4.2 },
+      { "memberId": 2, "instrument": "SHAKER", "speechSec": 3.1 },
+      { "memberId": 3, "instrument": "TAMBOURINE", "speechSec": 2.0 }
+    ],
+    "audio": { "url": "/v1/songs/c7f3a9/audio", "format": "mp3", "expiresInSec": 600 }
+  },
+  "error": null
+}
+```
+
+- `title`: Claude가 가사를 보고 지은 제목이에요 (예: "둥둥 자동차"). 외부 생성이 안 되면 가사에 쓴 첫 단어 + "노래"이고, 단어가 하나도 없으면 "11월 11일 드라이브 노래"처럼 날짜로 지어요. S05에 보이는 제목(앱이 녹음 중 처음 들린 명사로 만든 것)과 다를 수 있어요
+- `lyrics[].startMs`, `endMs`: 그 줄을 부르는 시간이에요. 재생 위치로 지금 부르는 줄을 찾아 강조하고(S06·다시 듣기의 가사 상자, 아래 한 줄 가사), 줄을 누르면 `startMs`로 이동해요
+- `lyrics[].highlights`: 가족 목소리에서 나온 단어가 그 줄 몇 번째 글자에 있는지예요. `start`는 넣고 `end`는 빼고 세요 (Kotlin `text.substring(start, end)` 그대로). 시안의 '사과' 색 강조에 써요. 의성어까지 칠할지는 `kind`로 골라요
+- `lyrics[].section`: `intro`·`verse`·`chorus`·`outro`. 값이 바뀌는 곳에 빈 줄을 넣으면 시안처럼 보여요
+- `firstBeatMs`: 첫 박이 나오는 시간이에요. n번째 박은 `firstBeatMs + n × 60000 / bpm`. 캐릭터 춤을 박자에 맞출 때 써요
+- `members[].speechSec`: 그 가족 목소리가 들린 시간. 0이면 이번 녹음에서 안 들린 거예요
+- 지금 앱의 `GeneratedSong.seatZone`은 좌석 기준이라 빼고, 누가 말했는지는 `memberId`로 줘요
+
+실패 (`FAILED`):
+
+```json
+{ "songId": "c7f3a9", "status": "FAILED", "step": "FIND_WORDS", "progress": 0.1, "result": null,
+  "error": { "code": "NO_SPEECH", "message": "목소리가 들리지 않았어요" } }
+```
+
+| `error.code` | 뜻 |
+|---|---|
+| `NO_SPEECH` | 녹음에서 말소리를 못 찾음 |
+| `TOO_SHORT` | 녹음이 3초보다 짧음 |
+| `BAD_AUDIO` | 파일을 읽을 수 없음 |
+| `TIMEOUT` | 240초 안에 끝나지 않음 (느린 PC에서도 넉넉하게) |
+| `INTERNAL` | 그 밖의 서버 오류 |
+
+## 6. 완성곡 받기 (S06)
+
+`GET /v1/songs/{songId}/audio` → `audio/mpeg`
+
+앱은 받은 파일을 앱 저장 공간에 넣고, 저장이 끝나면 바로 7번을 불러요.
+`result` JSON도 mp3와 같이 저장해 두면 S07 보관함(제목·날짜·길이)과 다시 듣기(가족·악기, 가사 강조, 줄 눌러 듣기)를 서버 없이 그릴 수 있어요.
+
+## 7. 지우기·그만두기
+
+`DELETE /v1/songs/{songId}` → `204`
+
+- 만드는 중이면 멈추고 지워요. S05에서 뒤로 가면 불러 주세요
+- 완성된 뒤면 서버에 남은 mp3를 지워요
+
+## HTTP 오류
+
+| 코드 | 뜻 |
+|---|---|
+| `400` | 요청 형식이 틀림 (본문에 `{ "code": "...", "message": "..." }`) |
+| `401` | `X-Api-Key`가 없거나 틀림 |
+| `404` | 없는 세션·노래 (이미 지웠거나 10분이 지남) |
+| `409` | 이미 완성하기를 부른 세션에 조각을 보냄 |
+| `413` | 녹음이 3분을 넘음 |
+
+## 앱에 넣은 소리 파일
+
+앱에서 트는 비트와 악기 소리는 완성곡과 같은 소리가 나도록 노래 엔진에서 뽑았어요 (`ai/songmaker/app_sounds.py`, `python -m songmaker.app_sounds <폴더>`). 앱의 `app/src/main/res/raw/`에 들어 있어요. 모두 22.05kHz 모노 16비트 wav, 합쳐서 약 3MB예요.
+
+| 파일 | 쓰는 곳 | 내용 |
+|---|---|---|
+| `beat_080_2`, `beat_095_4`, `beat_110_8`, `beat_125_16` | S03~S05에서 계속 재생 (`BeatPlayer`) | 속도 구간마다 끊김 없이 반복되는 2마디 |
+| `inst_<악기>_preview` (12개) | 멤버 추가의 "누르면 3초 미리 듣기" | 악기마다 3초 |
+| `inst_<악기>_hit` (12개) | S04 "소리 낸 사람의 악기가 울려요" | 0.6초 안팎 |
+| `sample_song.mp3`, `sample_song_info.json` | 앱을 처음 켰을 때 보관함에 한 번 넣는 예시 곡 (`archive/SampleSongSeeder.kt`) | 11/12 Hugging Face Space 서버로 만든 '우리 바다 가자' mp3(1.5MB)와, 5번 `result` 모양 그대로인 가사·박자 정보 |
+
+악기를 더하거나 소리를 바꾸면 같은 명령으로 다시 뽑아요.
+
+## 앱 구현 위치
+
+경로는 `app/src/main/java/com/hmgappchallenge/kidsrhythm/` 기준이에요.
+
+| 명세 | 앱 코드 |
+|---|---|
+| 호출 전체 (1~7번) | `server/SongService.kt`(인터페이스), `server/SongApi.kt`(HTTP 구현), `server/SongModels.kt`(모델·JSON 읽기). 미리보기·테스트용 `server/FakeSongService.kt` |
+| 2. 목소리 등록 | `audio/VoiceEnrollment.kt` → `ui/screen/MemberEditorDialog.kt`. 특징은 `family/FamilyRepository.kt`(`PrefsFamilyRepository`)가 기기에 저장 |
+| 3. 녹음 세션 | `recording/RecordingController.kt`(조각 전송·재시도·3분 제한·다시 완성하기), `audio/PcmRecorder.kt`(마이크 16kHz), `ui/screen/RecordingScreen.kt`(S04) |
+| 3-3 `drive` | `vehicle/CarVehicleSignals.kt`(AAOS Car API 속도·바깥 온도). 녹음하는 동안 1초마다 모아요 |
+| 5. 진행 상태 | `ui/screen/GeneratingScreen.kt`(1초마다 조회), `generating/GenerationProgress.kt`의 `doneCountForServer` |
+| 6·7. 완성곡 받기·지우기 | `GeneratingScreen.kt`가 받은 뒤 바로 서버에서 지워요. 보관함은 `archive/FileSongArchive.kt`(mp3 + `result` JSON) |
+| 가사·춤 | `ui/component/SongParts.kt`(`LyricsBox` 지금 줄 강조·줄 눌러 이동·단어 색, `DancingMascot` 박자 춤), S06 `CompletedScreen.kt`, S07 `ArchiveScreen.kt`·`ReplayScreen.kt` |
+| 속도 → 비트 | `beat/SpeedBand.kt`, 비트 재생 `audio/BeatPlayer.kt` |
+| 서버 주소·키 | `app/build.gradle.kts`(`local.properties`의 `kidsrhythm.serverUrl`, `kidsrhythm.apiKey`) |
+| 응답 모양 확인 테스트 | `app/src/test/.../server/SongJsonTest.kt` (이 문서의 예시 JSON 그대로 읽어 봐요) |
+
+## 확인 필요
+
+1. **음성 인식 위치**: 동의 화면에는 "음성 인식(Pleos Gleo AI)"이라고 적혀 있어요. 그런데 아이 목소리를 잘라 노래에 넣으려면 단어마다 시간이 필요해서 서버도 음성 인식을 해요. 문구를 "음성 인식과 노래 생성 서버로 보내요"로 바꿀지 정해야 해요.
+2. **녹음 중 실시간 표시**: 3번처럼 2초 조각을 보내면 시안대로 보여 줄 수 있지만, 화면이 1~3초 늦게 바뀌어요. 이 정도면 괜찮은지 봐 주세요. '연주 중' 가족은 바로 바뀌지만, '지금까지 들린 단어'는 음성 인식이 느린 PC(에뮬레이터를 같이 켠 노트북)에서는 녹음이 끝날 무렵에야 나와요.
+3. ~~**악기 개수**~~: 12종으로 정해졌어요 (main #22). 서버와 앱 소리도 12종으로 맞췄어요.
+4. **목소리 등록 길이**: 앱은 10초예요. 서버 기준으로는 실제로 말하는 시간이 5초 이상이면 충분해서, 시안 문장 "안녕, 우리 같이 노래하자!"를 두 번 따라 말하게 하는 걸 추천해요.
+5. **곡 길이**: 시안 예시는 1분 28초~2분 05초인데, 지금 엔진은 전주·벌스·후렴·벌스·후렴·후주 28마디라 110 BPM에서 1분 남짓이에요. 목표 길이를 정해 주세요. 길수록 만드는 시간도 늘어나요. S05 문구는 시안의 "보통 5~20초" 대신 "보통 1분쯤 걸려요"로 바꿔 두었어요. 에뮬레이터를 같이 켠 노트북(Ryzen 5 7520U)에서 서버를 돌리면 30~65초 걸려서예요 (짧게 녹음하고 바로 완성하면 음성 인식이 밀려 있어서 더 걸려요). GPU 서버처럼 빠른 곳에서 돌리면 시안 문구로 되돌려도 돼요. 11/12 Hugging Face Space(CPU 8개)에서는 16초 녹음 기준 18.8초 걸렸어요.
+6. **가사에 가족 호칭**: 시안 가사에 "엄마랑 같이 사과 먹자", "둘째도 랄랄라"가 있어요. 호칭을 넣으려면 앱이 이름을 서버로 보내야 하고(지금은 안 보냄), 동의 문구에도 적어야 해요. 안 보내면 녹음에서 들린 단어로만 가사를 만들어요.
+7. **한 곡 더**: 새로 녹음하는 건지(S03으로), 같은 녹음으로 다른 곡을 만드는 건지 정해 주세요. 같은 녹음이면 "원본은 바로 지운다"는 약속과 부딪혀서, 지금은 새로 녹음하는 걸로 생각하고 있어요.
+
+## 자주 묻는 것 (앱 연동, 11/12)
+
+| 질문 | 답 |
+|---|---|
+| 목소리를 등록 안 한 가족은? 가족 등록 API가 있나요? | 서버에 가족 등록이나 `memberId` 발급은 없어요. `memberId`는 앱의 가족 번호를 그대로 쓰고, 3-1 세션 시작 때 모든 가족을 악기와 같이 보내요. 목소리가 없으면 `embedding`을 `null`로 둬요. 완성할 때 서버가 목소리를 비슷한 것끼리 묶어서 그 가족의 악기도 붙여요. 나중에 목소리를 등록할 때는 2번(`POST /v1/voices/embed`)으로 특징만 받아 앱에 저장해요 |
+| 악기 코드는? | "공통 값"의 12개예요 (앱 `Instrument` 이름 그대로, 대소문자 상관없음). `drum`처럼 소문자로 보내도 돼요 |
+| 진행 단계 값이 있나요? | 5번 응답의 `step`(5단계)과 `progress`(0~1)예요. 앱의 `GenerationStep` 이름과 같아요 |
+| S05 제목과 S06 제목은? | S05는 앱이 녹음 중 처음 들린 명사로 보여 주고, S06은 5번 `result.title`을 써요. 둘이 다를 수 있어요 |
+| 토큰 만료는? | 기기 토큰은 없어요. 팀 공유 키(`X-Api-Key`) 하나이고 만료가 없어요 ("접속") |
+| 녹음 형식과 길이는? | 녹음: PCM 16비트·16kHz·모노를 WAV 헤더 없이 2초(64,000바이트)씩 보내요. 3초보다 짧으면 `TOO_SHORT`, 3분을 넘으면 `413`(`TOO_LONG`), 읽을 수 없으면 `BAD_AUDIO`예요. 목소리 등록: wav(16비트 PCM) 권장, 앱은 10초 녹음, 실제로 말한 시간이 3초 이상이어야 해요 (5초 이상 권장) |
+| 폴링 타임아웃은? | 앱은 1초마다 물어요. 서버가 240초를 넘기면 `TIMEOUT`으로 끝내니, 앱에서 60초처럼 짧게 끊지 말아 주세요. 한 곡에 노트북 서버는 1분 남짓, CPU 8코어 서버는 20초 안팎 걸려요 |
+| 동의를 철회하면? | 서버에는 가족·토큰·녹음·목소리 특징이 남지 않아요 ("기본 원칙"). 그래서 따로 지우는 API는 필요 없고, 앱이 기기에 저장한 가족·목소리 특징·보관함을 지우면 돼요. 만드는 중인 노래가 있으면 7번(`DELETE /v1/songs/{songId}`)으로 멈춰요 |
+| 음성 인식을 앱(Gleo)에서 하면? | 아이 목소리 조각을 노래에 넣으려면 단어마다 시간이 필요해서 지금은 서버가 해요 (확인 필요 1) |
+| 녹음 중 화자 구분과 WebSocket은? | WebSocket은 안 써요. 2초 조각을 HTTP로 보내면 응답에 `speaking`(그 사이 말한 가족)과 `newWords`(새로 들린 단어)가 와요. 완성할 때 서버가 한 번 더 정리해요. 카드를 소리 크기로 바꾸거나 빼려면 `speaking`을 안 쓰면 돼요 (확인 필요 2) |
