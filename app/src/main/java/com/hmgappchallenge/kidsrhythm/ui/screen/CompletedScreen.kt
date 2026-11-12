@@ -72,6 +72,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotPose
 import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
+import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.component.dropShadow
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
@@ -79,6 +80,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
 import java.time.ZoneId
+import java.io.IOException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -113,6 +115,8 @@ private val StageShape = RoundedCornerShape(48.dp)
 private val TrackShape = RoundedCornerShape(6.dp)
 private val PlayerShape = RoundedCornerShape(32.dp)
 private val PLAYER_BORDER = 2.dp
+
+private const val SAVE_ERROR_MILLIS = 3_000L
 
 private val StageHeight = 598.dp
 private val FloorTop = 480.dp
@@ -168,6 +172,14 @@ fun CompletedRoute(
     val player = services.player
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
+    // 저장하지 못했을 때 잠깐 띄우는 안내. 바뀔 때마다 새로 띄우고 잠시 뒤 지운다
+    var saveError by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(saveError) {
+        if (saveError != null) {
+            delay(SAVE_ERROR_MILLIS)
+            saveError = null
+        }
+    }
     LaunchedEffect(received.songId) {
         services.beatPlayer.stop()
         player.load(received.audioFile.path, autoplay = true, knownDurationMs = received.result.durationMs)
@@ -192,7 +204,14 @@ fun CompletedRoute(
                     val members = received.result.members.map { m ->
                         ArchivedMember(m.memberId, family.firstOrNull { it.id == m.memberId }?.name.orEmpty(), m.instrument)
                     }
-                    services.archive.import(received.result.copy(title = song.title), received.audioFile, members, received.createdAtMillis)
+                    try {
+                        services.archive.import(received.result.copy(title = song.title), received.audioFile, members, received.createdAtMillis)
+                    } catch (e: IOException) {
+                        // 캐시에 받아 둔 노래 파일이 지워졌거나 저장 공간이 모자라면 화면에 남아 다시 시도할 수 있게 한다
+                        saving = false
+                        saveError = "노래를 저장하지 못했어요. 잠시 뒤 다시 눌러 주세요"
+                        return@launch
+                    }
                     services.completedSong = null
                     onSaved()
                 }
@@ -201,6 +220,7 @@ fun CompletedRoute(
         onMakeAnother = onMakeAnother,
         onTitleChange = { editedTitle = it },
         startEnlarged = startEnlarged,
+        notice = saveError,
     )
 }
 
@@ -221,6 +241,7 @@ fun CompletedScreen(
     onSeek: (Long) -> Unit = {},
     onTitleChange: (String) -> Unit = {},
     startEnlarged: Boolean = false,
+    notice: String? = null,
 ) {
     // 처음 화면은 설정(S08 기본 보기 · 정차하면 크게 보기)을 따르고, 크게 보기·작게 보기로 오간다
     var enlarged by rememberSaveable { mutableStateOf(startEnlarged) }
@@ -238,6 +259,7 @@ fun CompletedScreen(
             onSave = onSave,
             onMakeAnother = onMakeAnother,
             onTitleChange = onTitleChange,
+            notice = notice,
         )
         return
     }
@@ -246,6 +268,7 @@ fun CompletedScreen(
     SubPage(
         title = "완성!",
         onBack = onBack,
+        overlay = { notice?.let { Toast(it) } },
         headerActions = {
             LargeButton(
                 text = "친구 바꾸기",
@@ -331,6 +354,7 @@ private fun BasicView(
     onSave: () -> Unit,
     onMakeAnother: () -> Unit,
     onTitleChange: (String) -> Unit,
+    notice: String?,
 ) {
     var editingTitle by rememberSaveable { mutableStateOf(false) }
     SubPage(
@@ -347,6 +371,7 @@ private fun BasicView(
                     },
                 )
             }
+            notice?.let { Toast(it) }
         },
     ) {
         Row(

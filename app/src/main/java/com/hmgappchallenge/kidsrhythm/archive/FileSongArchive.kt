@@ -3,6 +3,7 @@ package com.hmgappchallenge.kidsrhythm.archive
 import com.hmgappchallenge.kidsrhythm.server.SongJson
 import com.hmgappchallenge.kidsrhythm.server.SongResult
 import java.io.File
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,13 +22,22 @@ class FileSongArchive(private val dir: File) : SongArchive {
 
     override val songs: StateFlow<List<ArchivedSong>> = state
 
-    /** 완성곡을 보관함에 넣는다. [audio]는 앱 캐시에 받아 둔 mp3. */
+    /**
+     * 완성곡을 보관함에 넣는다. [audio]는 앱 캐시에 받아 둔 mp3.
+     * mp3가 없거나 복사하지 못하면 [IOException]을 던지고, 보관함에는 아무것도 남기지 않는다.
+     */
     suspend fun import(result: SongResult, audio: File, members: List<ArchivedMember>, createdAtMillis: Long = System.currentTimeMillis()): ArchivedSong =
         withContext(Dispatchers.IO) {
             dir.mkdirs()
             val id = createdAtMillis
             val target = File(dir, "$id.mp3")
-            audio.copyTo(target, overwrite = true)
+            if (!audio.isFile) throw IOException("노래 파일이 없어요: ${audio.path}")
+            try {
+                audio.copyTo(target, overwrite = true)
+            } catch (e: IOException) {
+                target.delete()
+                throw e
+            }
             val song = ArchivedSong(
                 id = id,
                 title = result.title,
