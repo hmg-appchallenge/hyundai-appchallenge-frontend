@@ -234,7 +234,7 @@ fun GeneratingScreen(word: String?, doneCount: Int, onBack: () -> Unit, overlay:
                         .padding(top = 120.dp),
                 )
                 HintChip(
-                    text = "노래에 맞춰 춤을 출 친구를 찾고 있어요!",
+                    text = "노래를 완성하면 친구가 나와서 춤춰요",
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .padding(bottom = 44.dp),
