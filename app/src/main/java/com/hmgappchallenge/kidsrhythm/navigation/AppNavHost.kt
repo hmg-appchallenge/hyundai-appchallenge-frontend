@@ -18,6 +18,7 @@ import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.audio.VoiceEnrollment
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
+import com.hmgappchallenge.kidsrhythm.recording.rememberMicPermissionState
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
 import com.hmgappchallenge.kidsrhythm.family.memberDeletedMessage
@@ -289,6 +290,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             val agreedAt = remember(consentVersion) { consentStore.agreedAtMillis }
             val settings = services.settings
             val scope = rememberCoroutineScope()
+            val mic = rememberMicPermissionState()
             SettingsScreen(
                 state = SettingsState(
                     familyCount = family.size,
@@ -301,6 +303,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                     consentAgreed = agreed,
                     songsLabel = "${songs.size}곡 · ${storageLabel(songBytes)} · 이 차에만 저장돼요",
                     hasSongs = songs.isNotEmpty(),
+                    micGranted = mic.granted,
                 ),
                 actions = SettingsActions(
                     onBack = { navController.popBackStack() },
@@ -322,6 +325,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                         services.player.release()
                         scope.launch { services.archive.deleteAll() }
                     },
+                    onMicClick = mic::request,
                 ),
             )
         }
