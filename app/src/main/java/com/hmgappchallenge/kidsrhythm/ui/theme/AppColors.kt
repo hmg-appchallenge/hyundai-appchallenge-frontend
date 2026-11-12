@@ -43,8 +43,6 @@ object AppColors {
     // 앱 화면 (주황 테마)
     val AppBackground = AppPalette.WarmGray100
     val BrandOrange = AppPalette.Orange500
-    val MusicAccent = AppPalette.Orange500
-    val SongIconBackground = Color(0xFFFFF3D6)
     val StageBackground = Color(0xFFFFF4E9)
     val StageFloor = Color(0xFFFFE7CF)
     val SpeechBubbleShadow = Color(0xFFFFE5C2)
@@ -130,6 +128,16 @@ object AppColors {
     val CompletedStageBackground = AppPalette.Orange100
     val BasicPlayButton = AppPalette.WarmBlack800
     val BasicProgressTrack = AppPalette.WarmBlack200
+    val SongToneYellow = Color(0xFFFFBC48)
+    val SongToneBlue = Color(0xFF0DA2FF)
+    val SongToneGreen = Color(0xFF14B97E)
+    val SongTonePurple = Color(0xFF783EEE)
+    val SongMeta = AppPalette.WarmGray900
+    val ReplayHint = AppPalette.WarmBlack700
+    val ReplayMemberInstrument = AppPalette.WarmGray700
+    val ReplayLyricNow = AppPalette.Orange100
+    val ReplayLyricPast = Color(0x52131417)
+    val ReplayLyricNext = Color(0xCC181310)
     val ParticleOrange = AppPalette.Orange500
     val ParticleYellow = Color(0xFFFFBC48)
     val MiniPlayerBackground = AppPalette.WarmWhite0

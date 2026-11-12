@@ -269,7 +269,16 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             ReplayRoute(
                 services = services,
                 songId = entry.arguments?.getLong(Route.ARG_ID) ?: 0L,
+                driving = !vehicle.isStopped(),
+                character = character,
                 onBack = { navController.popBackStack() },
+                // 다음 곡은 지금 다시 듣기를 바꿔 끼운다 (뒤로 가면 보관함)
+                onOpenSong = { id ->
+                    navController.navigate(Route.replay(id)) {
+                        popUpTo(Route.REPLAY) { inclusive = true }
+                    }
+                },
+                onChangeCharacter = { navController.navigate(Route.CHARACTER_PICKER) },
             )
         }
     }
