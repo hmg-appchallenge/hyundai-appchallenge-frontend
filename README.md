@@ -31,7 +31,7 @@
 | 팀 서버에 붙기 | 서버 담당이 연 주소에 붙으려면 `local.properties`에 두 줄 적어요: `kidsrhythm.serverUrl=https://…`, `kidsrhythm.apiKey=…`(팀 키, 서버 담당에게 따로 받아요) |
 | 인증 키 | 서버에 `KR_API_KEY`가 있으면 바깥에서 붙을 때 `local.properties`에 `kidsrhythm.apiKey=...`가 꼭 있어야 해요. 같은 PC의 에뮬레이터(`10.0.2.2`)는 키 없이 돼요 |
 
-- 서버 코드와 실행 방법, 심사용 고정 주소 만드는 법은 이 저장소의 `backend` 브랜치 README에 있어요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
+- 서버 코드와 실행 방법, 심사용 고정 주소 만드는 법은 백엔드 저장소(https://github.com/mnunu123/backend) README에 있어요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
 - 에뮬레이터 마이크는 "실행 방법" 5번처럼 켜요.
 - 사람 목소리 없이 시험하려면 16kHz 모노 16비트 wav를 앱 내부 폴더에 `debug_mic.wav`라는 이름으로 넣어요. 디버그 빌드는 마이크 대신 이 파일을 실제 시간처럼 흘려보내요. AAOS 에뮬레이터는 운전자가 사용자 10이라 `run-as`로 넣어요 (`adb shell am get-current-user`로 번호 확인).
 
