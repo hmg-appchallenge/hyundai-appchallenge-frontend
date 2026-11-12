@@ -115,6 +115,8 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 },
                 onDismissConsent = consentGate::dismiss,
                 onOpenPrivacy = { navController.navigate(Route.privacy(fromSettings = false)) },
+                consentNoticeCount = consentGate.noticeCount,
+                onTapConsentNotice = consentGate::openDialog,
             )
         }
         composable(Route.INTRO) {

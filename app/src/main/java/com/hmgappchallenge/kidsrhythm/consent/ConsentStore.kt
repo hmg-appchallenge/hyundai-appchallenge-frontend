@@ -2,6 +2,7 @@ package com.hmgappchallenge.kidsrhythm.consent
 
 import android.content.Context
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
@@ -41,10 +42,14 @@ class SharedPreferencesConsentStore(context: Context) : ConsentStore {
 /**
  * 홈 화면의 동의 팝업 표시 규칙.
  * - 동의 전이면 처음 들어올 때 팝업을 띄운다
- * - "나중에"로 닫아도 노래 만들기를 누르면 다시 띄운다 (동의 없이는 시작하지 않는다)
+ * - "나중에"로 닫은 뒤 노래 만들기를 누르면 시작하지 않고 동의가 필요하다는 안내를 띄운다
  */
 class ConsentGate(private val store: ConsentStore) {
     var isDialogVisible: Boolean by mutableStateOf(!store.isAgreed)
+        private set
+
+    /** 동의 없이 시작을 누른 횟수. 바뀔 때마다 안내를 새로 띄운다. 0이면 띄우지 않는다. */
+    var noticeCount: Int by mutableIntStateOf(0)
         private set
 
     fun agree() {
@@ -62,10 +67,15 @@ class ConsentGate(private val store: ConsentStore) {
         isDialogVisible = false
     }
 
-    /** 노래 만들기를 시작해도 되면 true. 동의 전이면 팝업을 다시 띄우고 false. */
+    /** 노래 만들기를 시작해도 되면 true. 동의 전이면 안내를 띄우고 false. */
     fun requestStart(): Boolean {
         if (store.isAgreed) return true
-        isDialogVisible = true
+        noticeCount++
         return false
+    }
+
+    /** 안내를 누르면 동의 팝업을 다시 연다. */
+    fun openDialog() {
+        isDialogVisible = true
     }
 }

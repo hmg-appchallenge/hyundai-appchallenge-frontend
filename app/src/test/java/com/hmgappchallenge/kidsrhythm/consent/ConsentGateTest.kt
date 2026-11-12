@@ -1,5 +1,6 @@
 package com.hmgappchallenge.kidsrhythm.consent
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,20 +42,30 @@ class ConsentGateTest {
     }
 
     @Test
-    fun `나중에로 닫아도 노래 만들기를 누르면 팝업을 다시 띄우고 시작하지 않는다`() {
+    fun `나중에로 닫은 뒤 노래 만들기를 누르면 시작하지 않고 동의 안내를 띄운다`() {
         val gate = ConsentGate(MemoryConsentStore())
         gate.dismiss()
-        assertFalse(gate.isDialogVisible)
         assertFalse(gate.requestStart())
+        assertFalse(gate.isDialogVisible)
+        assertEquals(1, gate.noticeCount)
+        assertFalse(gate.requestStart())
+        assertEquals(2, gate.noticeCount)
+    }
+
+    @Test
+    fun `동의 안내를 누르면 동의 팝업을 다시 연다`() {
+        val gate = ConsentGate(MemoryConsentStore())
+        gate.dismiss()
+        gate.requestStart()
+        gate.openDialog()
         assertTrue(gate.isDialogVisible)
     }
 
     @Test
-    fun `동의를 철회하면 노래 만들기를 누를 때 동의 팝업을 다시 띄운다`() {
+    fun `동의를 철회하면 노래 만들기를 눌러도 시작하지 않고 동의 안내를 띄운다`() {
         val gate = ConsentGate(MemoryConsentStore(isAgreed = true))
         gate.withdraw()
-        assertFalse(gate.isDialogVisible)
         assertFalse(gate.requestStart())
-        assertTrue(gate.isDialogVisible)
+        assertEquals(1, gate.noticeCount)
     }
 }

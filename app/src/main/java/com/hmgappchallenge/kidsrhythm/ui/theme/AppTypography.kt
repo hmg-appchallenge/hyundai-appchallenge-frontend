@@ -49,6 +49,7 @@ object AppTypography {
     val BodySmallStrong = style(26, 34, FontWeight.Bold)
 
     val LabelMedium = style(24, 28, FontWeight.Normal)
+    val CaptionMedium = style(22, 28, FontWeight.Normal)
     val LabelSmall = style(20, 24, FontWeight.Normal)
 
     /** 비트 화면의 큰 숫자 (`Pleos Connect/비트음량2`). */
