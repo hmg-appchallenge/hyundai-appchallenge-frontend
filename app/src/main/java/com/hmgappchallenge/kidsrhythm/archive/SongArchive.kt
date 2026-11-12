@@ -25,4 +25,8 @@ interface SongArchive {
     val songs: Flow<List<ArchivedSong>>
     suspend fun save(song: ArchivedSong)
     suspend fun delete(id: Long)
+    /** 저장된 노래를 모두 지운다. */
+    suspend fun deleteAll()
+    /** 저장된 노래 파일 크기 합 (바이트). */
+    suspend fun totalBytes(): Long
 }

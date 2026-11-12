@@ -44,6 +44,7 @@ class AppServices(context: Context) {
 
     /** 같이 놀 친구 (S01-1 친구 고르기). 홈과 S06 완성에 나온다. */
     val characterStore: CharacterStore = SharedPreferencesCharacterStore(appContext)
+    val settings = com.hmgappchallenge.kidsrhythm.settings.AppSettings(appContext)
     val vehicle: VehicleSignals = CarVehicleSignals(appContext)
     val beatPlayer = BeatPlayer(appContext)
     val sounds = InstrumentSounds(appContext)

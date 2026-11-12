@@ -17,6 +17,8 @@ interface FamilyRepository {
     fun add(name: String, instrument: Instrument, hasVoice: Boolean, embedding: List<Float>? = null): Boolean
     fun update(member: FamilyMember)
     fun delete(id: Long)
+    /** 가족을 모두 지운다 (이름·목소리 특징·악기). */
+    fun deleteAll()
 }
 
 const val MAX_FAMILY_MEMBERS = 4
@@ -42,6 +44,11 @@ open class InMemoryFamilyRepository(initial: List<FamilyMember> = emptyList()) :
 
     override fun delete(id: Long) {
         state.update { list -> list.filterNot { it.id == id } }
+        changed()
+    }
+
+    override fun deleteAll() {
+        state.value = emptyList()
         changed()
     }
 

@@ -143,6 +143,7 @@ fun CompletedRoute(
     onMakeAnother: () -> Unit,
     onChangeCharacter: () -> Unit,
     onBack: () -> Unit,
+    startEnlarged: Boolean = false,
 ) {
     // 처음 들어올 때의 곡을 붙잡아 둔다. 저장하면서 completedSong을 비워도 이 화면이 '곡 없음'으로 홈에 돌아가지 않게
     val received = remember { services.completedSong }
@@ -197,6 +198,7 @@ fun CompletedRoute(
         },
         onMakeAnother = onMakeAnother,
         onTitleChange = { editedTitle = it },
+        startEnlarged = startEnlarged,
     )
 }
 
@@ -216,9 +218,10 @@ fun CompletedScreen(
     onMakeAnother: () -> Unit,
     onSeek: (Long) -> Unit = {},
     onTitleChange: (String) -> Unit = {},
+    startEnlarged: Boolean = false,
 ) {
-    // 처음에는 기본 보기로 열고, 크게 보기·작게 보기로 오간다
-    var enlarged by rememberSaveable { mutableStateOf(false) }
+    // 처음 화면은 설정(S08 기본 보기 · 정차하면 크게 보기)을 따르고, 크게 보기·작게 보기로 오간다
+    var enlarged by rememberSaveable { mutableStateOf(startEnlarged) }
     if (!enlarged) {
         BasicView(
             song = song,

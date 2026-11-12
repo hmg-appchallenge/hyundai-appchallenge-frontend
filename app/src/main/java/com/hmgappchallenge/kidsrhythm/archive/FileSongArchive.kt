@@ -57,6 +57,15 @@ class FileSongArchive(private val dir: File) : SongArchive {
         state.update { list -> list.filterNot { it.id == id } }
     }
 
+    override suspend fun deleteAll() = withContext(Dispatchers.IO) {
+        dir.listFiles()?.forEach { it.delete() }
+        state.value = emptyList()
+    }
+
+    override suspend fun totalBytes(): Long = withContext(Dispatchers.IO) {
+        dir.listFiles()?.sumOf { it.length() } ?: 0L
+    }
+
     private fun writeInfo(song: ArchivedSong, result: SongResult?) {
         val o = JSONObject()
             .put("id", song.id)

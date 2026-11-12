@@ -63,7 +63,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
-import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
+import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 
@@ -192,29 +192,16 @@ fun GeneratingRoute(
 /** S05-2 노래 만들기를 그만둘까요? */
 @Composable
 private fun BoxScope.QuitConfirm(onQuit: () -> Unit, onContinue: () -> Unit) {
-    PopupOverlay(
-        topPadding = 402.dp,
-        width = 808.dp,
-        background = AppColors.PopupWarmBackground,
-        borderColor = AppColors.PopupWarmBorder,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("노래 만들기를 그만둘까요?", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
-                Text("지금 그만두면 만들던 노래가 사라져요.", style = AppTypography.BodyLargeStrong, color = AppColors.SongMeta)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-                LargeButton(
-                    text = "그만 두기",
-                    onClick = onQuit,
-                    icon = R.drawable.ic_close,
-                    variant = LargeButtonVariant.Secondary,
-                    modifier = Modifier.weight(1f),
-                )
-                LargeButton(text = "계속 만들기", onClick = onContinue, icon = R.drawable.ic_check, modifier = Modifier.weight(1f))
-            }
-        }
-    }
+    WarmConfirmPopup(
+        title = "노래 만들기를 그만둘까요?",
+        message = "지금 그만두면 만들던 노래가 사라져요.",
+        cancelText = "그만 두기",
+        onCancel = onQuit,
+        confirmText = "계속 만들기",
+        onConfirm = onContinue,
+        confirmIcon = R.drawable.ic_check,
+        confirmVariant = LargeButtonVariant.Primary,
+    )
 }
 
 private const val POLL_MILLIS = 1_000L
