@@ -23,7 +23,7 @@ class SpeedBandTest {
     @Test
     fun `속도 42 km_h는 110 BPM 시내 8비트다`() {
         assertEquals(110, bpmForSpeed(42f))
-        assertEquals("시내 · 8비트", speedZoneLabel(42f))
+        assertEquals("8비트", beatLabel(42f))
     }
 
     @Test

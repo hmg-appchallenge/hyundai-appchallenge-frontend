@@ -37,11 +37,14 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.beat.bpmForSpeed
-import com.hmgappchallenge.kidsrhythm.beat.speedZoneLabel
+import com.hmgappchallenge.kidsrhythm.beat.beatLabel
 import com.hmgappchallenge.kidsrhythm.family.FakeFamily
 import com.hmgappchallenge.kidsrhythm.family.FamilyMember
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentOption
@@ -54,8 +57,12 @@ import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
 private val StageShape = RoundedCornerShape(48.dp)
-private val ChipShape = RoundedCornerShape(16.dp)
+private val SpeedChipShape = RoundedCornerShape(21.7.dp)
+private val BeatChipShape = RoundedCornerShape(16.dp)
 private val CHIP_BORDER = 2.dp
+
+/** 속도 칩 글자. 공용 타이포 토큰보다 조금 커서 여기서만 쓴다. */
+private val SpeedChipTextStyle = AppTypography.TitleMedium.copy(fontSize = 37.93.sp, lineHeight = 48.77.sp)
 
 /** "BPM" 글자. 공용 타이포 토큰에 없는 크기라 여기서만 쓴다. */
 private val BpmUnitStyle = AppTypography.TitleLarge.copy(fontSize = 49.95.sp, lineHeight = 61.05.sp, fontWeight = FontWeight.Bold)
@@ -83,7 +90,7 @@ fun BaseBeatScreen(
             BeatStage(
                 bpm = bpm,
                 speedLabel = "속도 ${speedKmh.toInt()} km/h",
-                bandLabel = speedZoneLabel(speedKmh),
+                beatLabel = beatLabel(speedKmh),
                 modifier = Modifier.weight(1f),
             )
             Column(
@@ -133,7 +140,7 @@ fun BaseBeatScreen(
 }
 
 @Composable
-private fun BeatStage(bpm: Int, speedLabel: String, bandLabel: String, modifier: Modifier = Modifier) {
+private fun BeatStage(bpm: Int, speedLabel: String, beatLabel: String, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -171,25 +178,24 @@ private fun BeatStage(bpm: Int, speedLabel: String, bandLabel: String, modifier:
                 .padding(top = 800.dp),
             horizontalArrangement = Arrangement.spacedBy(21.9.dp),
         ) {
-            // 속도는 한 단계 낮춘 회색 칩, 비트를 정하는 구간은 흰 칩으로 돋보이게 한다
-            SpeedChip(speedLabel, emphasized = false)
-            SpeedChip(bandLabel, emphasized = true)
+            StageChip(speedLabel, SpeedChipShape, horizontalPadding = 32.5.dp, textStyle = SpeedChipTextStyle)
+            StageChip(beatLabel, BeatChipShape, horizontalPadding = 24.dp, textStyle = AppTypography.TitleMedium)
         }
     }
 }
 
 @Composable
-private fun SpeedChip(text: String, emphasized: Boolean) {
+private fun StageChip(text: String, shape: Shape, horizontalPadding: Dp, textStyle: TextStyle) {
     Box(
         modifier = Modifier
             .height(86.7.dp)
-            .clip(ChipShape)
-            .background(if (emphasized) AppColors.SurfaceBasic else AppColors.SpeedChipMuted)
-            .border(CHIP_BORDER, AppColors.SpeedChipMuted, ChipShape)
-            .padding(horizontal = 24.dp + CHIP_BORDER),
+            .clip(shape)
+            .background(AppColors.SpeedChipBackground)
+            .border(CHIP_BORDER, AppColors.SpeedChipBackground, shape)
+            .padding(horizontal = horizontalPadding + CHIP_BORDER),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text, style = AppTypography.TitleMedium, color = if (emphasized) AppColors.TextWarmStrong else AppColors.SpeedChipMutedText)
+        Text(text, style = textStyle, color = AppColors.TextDarkPrimary)
     }
 }
 
