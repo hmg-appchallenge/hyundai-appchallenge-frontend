@@ -62,6 +62,10 @@ object AppColors {
     val Dim = Color(0x66131417)
     val PlayheadLine = Color(0xFFC9C9C9)
     val PlayheadDot = Color(0xFFD9D9D9)
+    val PlayheadPausedLine = Color(0xFFFF3535)
+    val RecordingPaused = AppPalette.WarmGray500
+    val RecordingTime = AppPalette.WarmBlack500
+    val RecordingWordsLabel = AppPalette.WarmGray800
 
     // 따뜻한 팝업 (멤버 삭제 확인 등)
     val PopupWarmBackground = AppPalette.WarmWhite100
@@ -79,8 +83,7 @@ object AppColors {
     val CharacterLockedLabel = AppPalette.WarmBlack500
 
     // 속도 칩 (S03)
-    val SpeedChipMuted = AppPalette.WarmGray200
-    val SpeedChipMutedText = AppPalette.WarmBlack800
+    val SpeedChipBackground = AppPalette.WarmGray200
 
     // 토스트
     val ToastBackground = Color(0xFF44464E)

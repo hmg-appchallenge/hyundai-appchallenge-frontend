@@ -18,8 +18,8 @@ fun speedZoneFor(speedKmh: Float): SpeedZone = when {
     else -> SpeedZone.HIGHWAY
 }
 
-/** 속도 구간 칩 글자. 예: "시내 · 8비트" */
-fun speedZoneLabel(speedKmh: Float): String = speedZoneFor(speedKmh).let { "${it.label} · ${it.beats}비트" }
+/** 비트 칩 글자. 예: "8비트" */
+fun beatLabel(speedKmh: Float): String = "${speedZoneFor(speedKmh).beats}비트"
 
 /** 속도 구간의 비트 (2·4·8·16비트). 리듬을 얼마나 잘게 쪼개는지이고, 박자는 항상 4/4다. 서버 `beatType` 값이다. */
 fun beatTypeForSpeed(speedKmh: Float): Int = speedZoneFor(speedKmh).beats

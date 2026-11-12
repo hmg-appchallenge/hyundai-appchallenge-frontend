@@ -44,6 +44,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
@@ -244,6 +245,7 @@ fun RecordingScreen(
             RecordingStatus(elapsedMillis = snapshot.elapsedMillis, isPaused = isPaused, note = statusNote)
             Waveform(
                 levelHeights = snapshot.levelHeights,
+                isPaused = isPaused,
                 // 다음 막대가 붙기까지 얼마나 왔는지 (0~1)
                 progressToNextBar = (snapshot.elapsedMillis % FakeRecording.BAR_INTERVAL_MILLIS) / FakeRecording.BAR_INTERVAL_MILLIS.toFloat(),
                 modifier = Modifier.padding(top = 24.dp),
@@ -251,7 +253,7 @@ fun RecordingScreen(
             Text(
                 text = "가족 목소리 · 소리 낸 사람의 악기가 울려요",
                 style = AppTypography.BodySmallStrong,
-                color = AppColors.TextDarkSecondary,
+                color = AppColors.TextDarkPrimary,
                 modifier = Modifier.padding(top = 47.dp, bottom = 16.dp),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -276,7 +278,7 @@ fun RecordingScreen(
                 modifier = Modifier.weight(1f),
             )
             LargeButton(
-                text = if (isPaused) "계속하기" else "멈추기",
+                text = if (isPaused) "이어서 녹음하기" else "멈추기",
                 onClick = onTogglePause,
                 enabled = !isPaused || canResume,
                 icon = if (isPaused) R.drawable.ic_play else R.drawable.ic_pause,
@@ -294,13 +296,17 @@ private fun RecordingStatus(elapsedMillis: Long, isPaused: Boolean, note: String
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // 녹음 중은 빨간 원, 멈추면 회색 네모 (정지 기호)
         Box(
             Modifier
                 .size(24.dp)
-                .background(if (isPaused) AppColors.IconDarkQuaternary else AppColors.InformativeNegative, CircleShape),
+                .background(
+                    if (isPaused) AppColors.RecordingPaused else AppColors.InformativeNegative,
+                    if (isPaused) RectangleShape else CircleShape,
+                ),
         )
-        Text(text = if (isPaused) "잠시 멈춤" else "녹음 중", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
-        Text(text = formatElapsed(elapsedMillis), style = AppTypography.TitleLargeNormal, color = AppColors.TextDarkTertiary)
+        Text(text = if (isPaused) "녹음 정지" else "녹음 중", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
+        Text(text = formatElapsed(elapsedMillis), style = AppTypography.TitleLargeNormal, color = AppColors.RecordingTime)
         if (note != null) {
             Spacer(Modifier.width(24.dp))
             Text(text = note, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative)
@@ -311,9 +317,12 @@ private fun RecordingStatus(elapsedMillis: Long, isPaused: Boolean, note: String
 /**
  * 녹음 파형. 새 막대가 오른쪽 끝에 붙고 오래된 막대는 왼쪽으로 밀려난다.
  * 막대가 다 차기 전에는 왼쪽 빈 곳을 옅은 선으로 채운다. 가운데 세로선은 재생 위치 표시다.
+ * 멈추면 막대가 회색으로 바뀌고, 지금까지 녹음한 끝이 재생 위치(가운데)에 오도록 멈춰 선다.
  */
 @Composable
-private fun Waveform(levelHeights: List<Int>, progressToNextBar: Float, modifier: Modifier = Modifier) {
+private fun Waveform(levelHeights: List<Int>, isPaused: Boolean, progressToNextBar: Float, modifier: Modifier = Modifier) {
+    val barColor = if (isPaused) AppColors.RecordingPaused else AppColors.InformativeNegative
+    val lineColor = if (isPaused) AppColors.RecordingPaused else AppColors.InformativeNegative.copy(alpha = 0.3f)
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -332,18 +341,24 @@ private fun Waveform(levelHeights: List<Int>, progressToNextBar: Float, modifier
             val pitch = barWidth + BarGap.toPx()
             val radius = CornerRadius(6.dp.toPx())
             // 미끄러지는 동안 양 끝에 반쯤 걸친 막대까지 그린다
-            val slots = ((size.width + BarGap.toPx()) / pitch).toInt() + 2
+            // 멈추면 막대가 재생 위치(카드 가운데)에서 끝난다. 캔버스는 왼쪽 패딩만큼 밀려 있어 그만큼 뺀다
+            val endX = if (isPaused) {
+                (size.width + (32.dp + BORDER_WIDTH).toPx() + (6.dp + BORDER_WIDTH).toPx()) / 2 - (32.dp + BORDER_WIDTH).toPx()
+            } else {
+                size.width
+            }
+            val slots = ((endX + BarGap.toPx()) / pitch).toInt() + 2
             val visible = levelHeights.takeLast(slots)
-            // 가장 최근 막대는 오른쪽 바깥에서 들어와 다음 막대가 붙을 때 오른쪽 끝에 닿는다
-            val slide = (1f - progressToNextBar) * pitch
-            val startX = size.width - visible.size * pitch + BarGap.toPx() + slide
+            // 가장 최근 막대는 오른쪽 바깥에서 들어와 다음 막대가 붙을 때 오른쪽 끝에 닿는다. 멈추면 미끄러지지 않는다
+            val slide = if (isPaused) 0f else (1f - progressToNextBar) * pitch
+            val startX = endX - visible.size * pitch + BarGap.toPx() + slide
             val centerY = size.height / 2
             // 미끄러지며 패딩 영역으로 넘어간 막대는 잘라낸다
             clipRect {
                 if (startX > BarGap.toPx()) {
                     val lineHeight = 4.dp.toPx()
                     drawRoundRect(
-                        color = AppColors.InformativeNegative.copy(alpha = 0.3f),
+                        color = lineColor,
                         topLeft = Offset(0f, centerY - lineHeight / 2),
                         size = Size((startX - BarGap.toPx()).coerceAtLeast(0f), lineHeight),
                         cornerRadius = radius,
@@ -352,7 +367,7 @@ private fun Waveform(levelHeights: List<Int>, progressToNextBar: Float, modifier
                 visible.forEachIndexed { index, heightDp ->
                     val h = heightDp.dp.toPx()
                     drawRoundRect(
-                        color = AppColors.InformativeNegative,
+                        color = barColor,
                         topLeft = Offset(startX + index * pitch, centerY - h / 2),
                         size = Size(barWidth, h),
                         cornerRadius = radius,
@@ -364,9 +379,12 @@ private fun Waveform(levelHeights: List<Int>, progressToNextBar: Float, modifier
         Canvas(Modifier.fillMaxSize()) {
             val x = size.width / 2
             val dotRadius = PlayheadDotSize.toPx() / 2
-            drawLine(AppColors.PlayheadLine, Offset(x, 0f), Offset(x, size.height), strokeWidth = BORDER_WIDTH.toPx())
-            drawCircle(AppColors.PlayheadDot, dotRadius, Offset(x, -dotRadius))
-            drawCircle(AppColors.PlayheadDot, dotRadius, Offset(x, size.height + dotRadius))
+            // 멈추면 재생 위치를 빨갛게 표시해 여기서 이어 녹음한다는 걸 보여 준다
+            val line = if (isPaused) AppColors.PlayheadPausedLine else AppColors.PlayheadLine
+            val dot = if (isPaused) AppColors.InformativeNegative else AppColors.PlayheadDot
+            drawLine(line, Offset(x, 0f), Offset(x, size.height), strokeWidth = BORDER_WIDTH.toPx())
+            drawCircle(dot, dotRadius, Offset(x, -dotRadius))
+            drawCircle(dot, dotRadius, Offset(x, size.height + dotRadius))
         }
     }
 }
@@ -374,7 +392,7 @@ private fun Waveform(levelHeights: List<Int>, progressToNextBar: Float, modifier
 @Composable
 private fun HeardWords(words: List<String>, modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Text(text = "지금까지 들린 단어", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+        Text(text = "지금까지 들린 단어", style = AppTypography.LabelMedium, color = AppColors.RecordingWordsLabel)
         Row(
             modifier = Modifier
                 .height(64.dp)
