@@ -23,7 +23,7 @@
 |---|---|
 | 기본 주소 | `http://10.0.2.2:8000` (에뮬레이터 안에서 본 같은 PC) |
 | 주소 바꾸기 | `local.properties`에 `kidsrhythm.serverUrl=http://192.168.0.10:8000`처럼 적어요. 실제 기기에서 PC 서버에 붙을 때 써요 (http는 디버그 빌드에서만 모든 주소를 허용해요) |
-| 팀 서버에 붙기 | 서버 담당이 연 임시 https 주소와 팀 키를 받아서 `local.properties`에 두 줄 적어요: `kidsrhythm.serverUrl=https://….trycloudflare.com`, `kidsrhythm.apiKey=…`. 주소는 서버 PC가 켜져 있는 동안만 살아 있고, 다시 열면 바뀌어요 |
+| 팀 서버에 붙기 | 고정 서버(Hugging Face Space, 늘 켜져 있어요)에 붙으려면 `local.properties`에 두 줄 적어요: `kidsrhythm.serverUrl=https://awqdqwd-kidsrhythm-server.hf.space`, `kidsrhythm.apiKey=…`(팀 키, 서버 담당에게 따로 받아요) |
 | 인증 키 | 서버에 `KR_API_KEY`가 있으면 바깥에서 붙을 때 `local.properties`에 `kidsrhythm.apiKey=...`가 꼭 있어야 해요. 같은 PC의 에뮬레이터(`10.0.2.2`)는 키 없이 돼요 |
 
 - 서버 실행 방법은 AI·백엔드 담당이 따로 안내해요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
