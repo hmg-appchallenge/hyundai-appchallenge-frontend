@@ -86,7 +86,7 @@ fun HomeScreen(
                     .align(Alignment.TopCenter)
                     .padding(top = 120.dp),
             )
-            StandingCharacter(character)
+            StandingCharacter(character, swaying = true)
             HintChip(
                 text = "노래를 완성하면 친구가 나와서 춤춰요",
                 modifier = Modifier
