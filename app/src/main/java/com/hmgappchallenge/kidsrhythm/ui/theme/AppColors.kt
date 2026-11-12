@@ -128,6 +128,8 @@ object AppColors {
 
     // 완성 화면 (S06)
     val CompletedStageBackground = AppPalette.Orange100
+    val BasicPlayButton = AppPalette.WarmBlack800
+    val BasicProgressTrack = AppPalette.WarmBlack200
     val ParticleOrange = AppPalette.Orange500
     val ParticleYellow = Color(0xFFFFBC48)
     val MiniPlayerBackground = AppPalette.WarmWhite0
