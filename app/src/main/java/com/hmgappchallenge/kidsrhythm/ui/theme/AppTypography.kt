@@ -35,6 +35,7 @@ private fun style(size: Int, lineHeight: Int, weight: FontWeight) = TextStyle(
 object AppTypography {
     val HeadlineLarge = style(60, 80, FontWeight.ExtraBold)
 
+    val HeadlineSmall = style(48, 64, FontWeight.ExtraBold)
     val TitleLarge = style(40, 52, FontWeight.Bold)
     val TitleLargeExtraStrong = style(40, 52, FontWeight.ExtraBold)
     val TitleLargeNormal = style(40, 52, FontWeight.Normal)
