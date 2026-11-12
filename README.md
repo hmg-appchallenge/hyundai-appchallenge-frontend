@@ -8,7 +8,7 @@
 
 1. JDK 17과 Android Studio를 준비해요.
 2. [Pleos Connect Emulator 설치 문서](https://document.pleos.ai/docs/connect/guide/getting-started/application-development/setup-connect-sdk-emulator)대로 AVD를 만들고 실행해요.
-3. 서버 주소를 정해요. 고정 서버(늘 켜져 있어요)를 쓰면 `local.properties`에 두 줄만 적고 따로 켤 건 없어요. 같은 PC에서 서버를 켜서 쓸 수도 있어요 (아래 "노래 생성 서버").
+3. 노래 생성 서버를 정해요. 같은 PC에서 켜거나, 서버 담당이 연 주소가 있으면 `local.properties`에 두 줄을 적어요 (아래 "노래 생성 서버").
 4. 앱을 빌드해서 설치해요.
 
 ```bash
@@ -28,10 +28,10 @@
 |---|---|
 | 기본 주소 | `http://10.0.2.2:8000` (에뮬레이터 안에서 본 같은 PC) |
 | 주소 바꾸기 | `local.properties`에 `kidsrhythm.serverUrl=http://192.168.0.10:8000`처럼 적어요. 실제 기기에서 PC 서버에 붙을 때 써요 (http는 디버그 빌드에서만 모든 주소를 허용해요) |
-| 팀 서버에 붙기 | 고정 서버(Hugging Face Space, 늘 켜져 있어요)에 붙으려면 `local.properties`에 두 줄 적어요: `kidsrhythm.serverUrl=https://awqdqwd-kidsrhythm-server.hf.space`, `kidsrhythm.apiKey=…`(팀 키, 서버 담당에게 따로 받아요) |
+| 팀 서버에 붙기 | 서버 담당이 연 주소에 붙으려면 `local.properties`에 두 줄 적어요: `kidsrhythm.serverUrl=https://…`, `kidsrhythm.apiKey=…`(팀 키, 서버 담당에게 따로 받아요) |
 | 인증 키 | 서버에 `KR_API_KEY`가 있으면 바깥에서 붙을 때 `local.properties`에 `kidsrhythm.apiKey=...`가 꼭 있어야 해요. 같은 PC의 에뮬레이터(`10.0.2.2`)는 키 없이 돼요 |
 
-- 서버 실행 방법은 AI·백엔드 담당이 따로 안내해요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
+- 서버 코드와 실행 방법, 심사용 고정 주소 만드는 법은 이 저장소의 `backend` 브랜치 README에 있어요. 화면만 확인할 때는 서버를 mock 모드(`python -m server --mode mock`)로 켜면 녹음 내용과 상관없이 정해진 가사·노래가 와요.
 - 에뮬레이터 마이크는 "실행 방법" 5번처럼 켜요.
 - 사람 목소리 없이 시험하려면 16kHz 모노 16비트 wav를 앱 내부 폴더에 `debug_mic.wav`라는 이름으로 넣어요. 디버그 빌드는 마이크 대신 이 파일을 실제 시간처럼 흘려보내요. AAOS 에뮬레이터는 운전자가 사용자 10이라 `run-as`로 넣어요 (`adb shell am get-current-user`로 번호 확인).
 
@@ -61,7 +61,7 @@ adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 rm files/debug_speed.t
 | S06 완성 화면 | 받은 mp3를 앱 임시 폴더에 두고 바로 틀어요. **보관함에 저장**을 눌러야 보관함에 남아요 |
 | S07 보관함 | 앱 전용 저장소 `files/songs/`에 곡마다 mp3와 정보 파일(json: 제목, 만든 시간, 줄마다 시간이 있는 가사, 가족 이름과 악기)이 있어요. 동의 화면의 "노래는 이 차에만 저장해요"를 지키는 구조예요 |
 
-- 처음 켜면 보관함에 예시 곡 '우리 바다 가자'(1분 1초)가 하나 들어 있어요. 11/12 고정 서버에 시험 녹음(TTS로 만든 아이·엄마 목소리)을 넣어 만든 곡이에요 (`res/raw/sample_song.mp3`, `sample_song_info.json`). 지우면 다시 생기지 않고, 앱 데이터를 지우면 다시 들어가요.
+- 처음 켜면 보관함에 예시 곡 '우리 바다 가자'(1분 1초)가 하나 들어 있어요. 11/12 Hugging Face Space 서버에 시험 녹음(TTS로 만든 아이·엄마 목소리)을 넣어 만든 곡이에요 (`res/raw/sample_song.mp3`, `sample_song_info.json`). 지우면 다시 생기지 않고, 앱 데이터를 지우면 다시 들어가요.
 - 심사·시연에서 만든 노래는 그 PC에서 돌아가는 에뮬레이터 안, 앱 전용 저장소에 저장돼요. PC의 다운로드 폴더 같은 곳에는 파일이 생기지 않아요.
 - 앱을 지우거나 에뮬레이터 데이터를 지우면(Wipe Data) 보관함도 같이 지워져요.
 - 저장된 파일은 디버그 빌드에서 adb로 볼 수 있어요.

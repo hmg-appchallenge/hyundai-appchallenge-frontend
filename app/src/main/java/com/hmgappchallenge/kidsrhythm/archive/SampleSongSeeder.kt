@@ -10,7 +10,7 @@ import org.json.JSONObject
 /**
  * 앱을 처음 켰을 때 보관함이 비어 보이지 않게 예시 곡을 한 번 넣는다.
  *
- * 예시 곡은 `res/raw/sample_song.mp3`와 `res/raw/sample_song_info.json`이다 (11/12 고정 서버로 만든 '우리 바다 가자').
+ * 예시 곡은 `res/raw/sample_song.mp3`와 `res/raw/sample_song_info.json`이다 (11/12 Hugging Face Space 서버로 만든 '우리 바다 가자').
  * 넣고 나면 [marker] 파일을 남겨서, 사용자가 지워도 다시 넣지 않는다. 앱 데이터를 지우면 다시 들어간다.
  */
 class SampleSongSeeder(
