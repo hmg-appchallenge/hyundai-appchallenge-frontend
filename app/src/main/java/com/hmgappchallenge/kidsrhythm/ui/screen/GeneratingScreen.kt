@@ -62,6 +62,10 @@ import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
+import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
+import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
+import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 
 private val StageShape = RoundedCornerShape(48.dp)
 private val StageWidth = 774.dp
@@ -160,11 +164,17 @@ fun GeneratingRoute(
             }
         }
     }
+    // S05-2 뒤로 가기는 바로 나가지 않고 그만둘지 한 번 묻는다
+    var confirmQuit by remember { mutableStateOf(false) }
+    BackHandler(enabled = error == null && !finished) { confirmQuit = true }
     GeneratingScreen(
         word = word,
         doneCount = doneCount,
-        onBack = onBack,
+        onBack = { if (error == null && !finished) confirmQuit = true else onBack() },
         overlay = {
+            if (confirmQuit && error == null) {
+                QuitConfirm(onQuit = onBack, onContinue = { confirmQuit = false })
+            }
             error?.let { e ->
                 MessagePopup(
                     title = "노래를 만들지 못했어요",
@@ -176,6 +186,21 @@ fun GeneratingRoute(
                 )
             }
         },
+    )
+}
+
+/** S05-2 노래 만들기를 그만둘까요? */
+@Composable
+private fun BoxScope.QuitConfirm(onQuit: () -> Unit, onContinue: () -> Unit) {
+    WarmConfirmPopup(
+        title = "노래 만들기를 그만둘까요?",
+        message = "지금 그만두면 만들던 노래가 사라져요.",
+        cancelText = "그만 두기",
+        onCancel = onQuit,
+        confirmText = "계속 만들기",
+        onConfirm = onContinue,
+        confirmIcon = R.drawable.ic_check,
+        confirmVariant = LargeButtonVariant.Primary,
     )
 }
 

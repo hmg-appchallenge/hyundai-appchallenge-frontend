@@ -111,10 +111,15 @@ fun RecordingRoute(
     LaunchedEffect(hasPermission) {
         if (hasPermission) controller.start(family) else if (!permissionDenied) permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
     }
-    // 녹음하는 동안 비트는 작게 (마이크로 들어가지 않게)
+    // 녹음하는 동안 비트 크기는 설정(S08-2)을 따른다. 끄면 틀지 않는다
     DisposableEffect(Unit) {
-        services.beatPlayer.playForSpeed(speedKmh)
-        services.beatPlayer.setVolume(BeatPlayer.RECORDING_VOLUME)
+        val level = services.settings.recordingBeat
+        if (level.volume > 0f) {
+            services.beatPlayer.playForSpeed(speedKmh)
+            services.beatPlayer.setVolume(level.volume)
+        } else {
+            services.beatPlayer.stop()
+        }
         onDispose { services.beatPlayer.setVolume(BeatPlayer.DEFAULT_VOLUME) }
     }
     // 백그라운드로 가면 녹음을 멈춘다. 돌아와서는 사용자가 계속하기로 다시 시작한다

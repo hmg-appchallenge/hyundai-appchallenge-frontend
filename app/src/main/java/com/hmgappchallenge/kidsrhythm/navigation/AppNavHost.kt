@@ -37,6 +37,17 @@ import com.hmgappchallenge.kidsrhythm.ui.screen.ReplayRoute
 import com.hmgappchallenge.kidsrhythm.ui.screen.VoiceSettingsScreen
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleState
 import kotlinx.coroutines.delay
+import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsState
+import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsScreen
+import com.hmgappchallenge.kidsrhythm.ui.screen.SettingsActions
+import com.hmgappchallenge.kidsrhythm.ui.screen.PrivacyPolicyScreen
+import com.hmgappchallenge.kidsrhythm.settings.storageLabel
+import com.hmgappchallenge.kidsrhythm.settings.startsEnlarged
+import com.hmgappchallenge.kidsrhythm.settings.consentLabel
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
 
 private object Route {
     const val HOME = "s01_home"
@@ -57,6 +68,12 @@ private object Route {
     fun replay(id: Long) = "s07_1_replay/$id"
     const val VOICE_SETTINGS = "s02_1_voice_settings"
     const val CHARACTER_PICKER = "s01_1_character_picker"
+    const val SETTINGS = "s08_settings"
+    const val ARG_FROM = "from"
+    const val PRIVACY = "s00_1_privacy/{$ARG_FROM}"
+
+    /** [fromSettings]면 확인 후 설정으로, 아니면 동의 화면으로 돌아간다는 안내를 보여 준다. */
+    fun privacy(fromSettings: Boolean) = "s00_1_privacy/${if (fromSettings) "settings" else "consent"}"
 }
 
 /** S02 시작 음성 안내 (기획서 S02 문구). */
@@ -89,8 +106,7 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
                 onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
                 onOpenCharacterPicker = { navController.navigate(Route.CHARACTER_PICKER) },
-                // TODO(기획): 설정(S08) 화면을 만들면 연결한다
-                onOpenSettings = {},
+                onOpenSettings = { navController.navigate(Route.SETTINGS) },
                 onPlayRecent = { latest?.let { navController.navigate(Route.replay(it.id)) } },
                 // 흐름도: 동의하면 가족 목소리 등록(S02-1)으로 이어진다
                 onAgreeConsent = {
@@ -98,11 +114,12 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                     navController.navigate(Route.VOICE_SETTINGS)
                 },
                 onDismissConsent = consentGate::dismiss,
+                onOpenPrivacy = { navController.navigate(Route.privacy(fromSettings = false)) },
             )
         }
         composable(Route.INTRO) {
             // 스피커로 시작 안내를 들려준다 (S02 "음악 한번 만들어볼까?")
-            LaunchedEffect(Unit) { services.voiceGuide.speak(INTRO_GUIDE) }
+            LaunchedEffect(Unit) { if (services.settings.voiceGuideEnabled) services.voiceGuide.speak(INTRO_GUIDE) }
             IntroScreen(
                 onFinished = {
                     navController.navigate(Route.BASE_BEAT) {
@@ -178,6 +195,11 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 services = services,
                 family = family,
                 character = character,
+                startEnlarged = startsEnlarged(
+                    services.settings.songViewMode,
+                    services.settings.autoEnlargeWhenStopped,
+                    stopped = vehicle.isStopped(),
+                ),
                 onSaved = {
                     navController.navigate(Route.ARCHIVE) {
                         popUpTo(Route.HOME)
@@ -252,6 +274,63 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                     character = it
                     navController.popBackStack()
                 },
+                onBack = { navController.popBackStack() },
+            )
+        }
+        composable(Route.SETTINGS) {
+            val songs by services.archive.songs.collectAsState()
+            var songBytes by remember { mutableLongStateOf(0L) }
+            LaunchedEffect(songs) { songBytes = services.archive.totalBytes() }
+            // 동의 저장소는 Compose 상태가 아니라서, 철회하면 이 값을 올려 다시 읽게 한다
+            var consentVersion by remember { mutableIntStateOf(0) }
+            val agreed = remember(consentVersion) { consentStore.isAgreed }
+            val agreedAt = remember(consentVersion) { consentStore.agreedAtMillis }
+            val settings = services.settings
+            val scope = rememberCoroutineScope()
+            SettingsScreen(
+                state = SettingsState(
+                    familyCount = family.size,
+                    characterNickname = character.nickname,
+                    songViewMode = settings.songViewMode,
+                    autoEnlargeWhenStopped = settings.autoEnlargeWhenStopped,
+                    voiceGuideEnabled = settings.voiceGuideEnabled,
+                    recordingBeat = settings.recordingBeat,
+                    consentLabel = consentLabel(agreed, agreedAt),
+                    consentAgreed = agreed,
+                    songsLabel = "${songs.size}곡 · ${storageLabel(songBytes)} · 이 차에만 저장돼요",
+                    hasSongs = songs.isNotEmpty(),
+                ),
+                actions = SettingsActions(
+                    onBack = { navController.popBackStack() },
+                    onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
+                    onOpenCharacterPicker = { navController.navigate(Route.CHARACTER_PICKER) },
+                    onOpenPrivacy = { navController.navigate(Route.privacy(fromSettings = true)) },
+                    onSongViewModeChange = settings::updateSongViewMode,
+                    onAutoEnlargeChange = settings::updateAutoEnlargeWhenStopped,
+                    onVoiceGuideChange = settings::updateVoiceGuideEnabled,
+                    onRecordingBeatChange = settings::updateRecordingBeat,
+                    // 기획 결정: 철회하면 목소리·이름·악기를 지우고, 완성곡은 남긴다
+                    onWithdrawConsent = {
+                        services.family.deleteAll()
+                        consentGate.withdraw()
+                        consentVersion++
+                    },
+                    onDeleteVoices = { services.family.deleteAll() },
+                    onDeleteSongs = {
+                        services.player.release()
+                        scope.launch { services.archive.deleteAll() }
+                    },
+                ),
+            )
+        }
+        composable(
+            route = Route.PRIVACY,
+            arguments = listOf(navArgument(Route.ARG_FROM) { type = NavType.StringType }),
+        ) { entry ->
+            val fromSettings = entry.arguments?.getString(Route.ARG_FROM) == "settings"
+            PrivacyPolicyScreen(
+                returnHint = if (fromSettings) "확인 후 설정으로 돌아가요" else "확인 후 동의 화면으로 돌아가요",
+                onConfirm = { navController.popBackStack() },
                 onBack = { navController.popBackStack() },
             )
         }

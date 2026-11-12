@@ -48,6 +48,7 @@ fun HomeScreen(
     onPlayRecent: () -> Unit,
     onAgreeConsent: () -> Unit,
     onDismissConsent: () -> Unit,
+    onOpenPrivacy: () -> Unit = {},
 ) {
     AppPage(
         selectedTab = AppTab.Make,
@@ -122,7 +123,7 @@ fun HomeScreen(
         },
         overlay = {
             if (isConsentVisible) {
-                ConsentDialog(onAgree = onAgreeConsent, onDismiss = onDismissConsent)
+                ConsentDialog(onAgree = onAgreeConsent, onDismiss = onDismissConsent, onOpenPrivacy = onOpenPrivacy)
             }
         },
     )

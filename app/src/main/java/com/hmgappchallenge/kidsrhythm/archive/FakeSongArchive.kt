@@ -29,4 +29,10 @@ class FakeSongArchive(nowMillis: Long = System.currentTimeMillis()) : SongArchiv
     override suspend fun delete(id: Long) {
         state.update { list -> list.filterNot { it.id == id } }
     }
+
+    override suspend fun deleteAll() {
+        state.value = emptyList()
+    }
+
+    override suspend fun totalBytes(): Long = 0L
 }

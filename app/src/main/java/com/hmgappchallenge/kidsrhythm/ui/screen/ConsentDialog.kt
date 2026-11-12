@@ -54,7 +54,7 @@ private val ConsentItems = listOf(
 
 /** S00 보호자 동의 팝업. 앱 창을 어둡게 덮고 가운데에 뜬다. */
 @Composable
-fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
+fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit, onOpenPrivacy: () -> Unit = {}) {
     PopupOverlay(topPadding = 96.dp, background = AppColors.PopupWarmBackground) {
         Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
             Column(verticalArrangement = Arrangement.spacedBy(17.dp)) {
@@ -76,12 +76,11 @@ fun BoxScope.ConsentDialog(onAgree: () -> Unit, onDismiss: () -> Unit) {
                     ConsentItemRow(item, showDivider = index < ConsentItems.lastIndex)
                 }
             }
-            // TODO(기획): 개인정보 처리방침 주소가 정해지면 연결한다
             SettingRow(
                 badge = SettingBadge.Privacy,
                 title = "개인정보 처리방침 자세히 보기",
                 subtitle = "설정에서 언제든 철회할 수 있어요",
-                onClick = {},
+                onClick = onOpenPrivacy,
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
