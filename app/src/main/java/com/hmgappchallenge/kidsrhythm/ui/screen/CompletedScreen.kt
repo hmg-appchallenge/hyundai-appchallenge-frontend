@@ -101,9 +101,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.gestures.detectTapGestures
+import com.hmgappchallenge.kidsrhythm.ui.component.StageViewButton
+import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
+import com.hmgappchallenge.kidsrhythm.ui.component.highlightWord
+import com.hmgappchallenge.kidsrhythm.ui.component.SongProgressPlayer
+import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
 
 private val StageShape = RoundedCornerShape(48.dp)
-private val PillShape = RoundedCornerShape(32.dp)
 private val TrackShape = RoundedCornerShape(6.dp)
 private val PlayerShape = RoundedCornerShape(32.dp)
 private val PLAYER_BORDER = 2.dp
@@ -119,25 +123,14 @@ private val CharacterHeight = 430.dp
 private val BasicCharacterTop = 287.dp
 private val BasicCharacterHeight = 488.dp
 
-/**
- * 애니메이션 프레임(512px, 캐릭터가 위 15px ~ 아래 492px)을 멈춘 이미지와 같은 높이·바닥에 맞춘다.
- * 멈춘 이미지 높이 430일 때 프레임 462, 위치는 14 위로 올린다.
- */
-private const val ANIMATION_SIZE_RATIO = 462f / 430f
-private const val ANIMATION_LIFT_RATIO = 14f / 430f
 
 /** 기본 보기 패널. */
 private val EditButtonShape = RoundedCornerShape(20.dp)
-private val LyricsPanelShape = RoundedCornerShape(32.dp)
 private val LyricsPanelHeight = 521.dp
-private val ProgressShape = RoundedCornerShape(8.dp)
 
-/** 파티클이 생기는 거리. 캐릭터 가운데에서 바로 생기면 몸에 가려 보이지 않아 가장자리쯤에서 시작한다. */
-private val ParticleStartRadius = 200.dp
 
 /** 공용 타이포 토큰에 없는 굵기·크기라 여기서만 쓴다. */
 private val SongTitleStyle = AppTypography.HeadlineLarge.copy(fontWeight = FontWeight.Bold)
-private val ShrinkLabelStyle = AppTypography.TitleMedium.copy(fontWeight = FontWeight.ExtraBold)
 private val PlayerMetaStyle = AppTypography.LabelMedium.copy(fontSize = 22.sp)
 
 /** S06 완성. 받아 둔 노래를 바로 틀고, 보관함에 저장하거나 한 곡 더 만든다. */
@@ -308,53 +301,6 @@ fun CompletedScreen(
     }
 }
 
-/** 무대 가운데 앉은 친구와, 그 둘레로 퍼지는 꽃가루 파티클. */
-@Composable
-private fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnimation?, top: Dp, height: Dp) {
-    val particles = remember { mutableStateListOf<Particle>() }
-    var now by remember { mutableLongStateOf(0L) }
-    LaunchedEffect(Unit) {
-        val start = withFrameMillis { it }
-        while (true) {
-            withFrameMillis { frame ->
-                now = frame - start
-                particles.removeAll { !it.isAlive(now) }
-            }
-        }
-    }
-    LaunchedEffect(Unit) {
-        val random = Random(System.nanoTime())
-        while (true) {
-            particles += randomParticle(random, bornAtMillis = now)
-            delay(nextSpawnDelay(random))
-        }
-    }
-    val note = painterResource(R.drawable.ic_music)
-    Canvas(Modifier.fillMaxSize()) {
-        val center = Offset(size.width / 2, (top + height / 2).toPx())
-        particles.forEach { drawParticle(it, now, center, note) }
-    }
-    if (animation != null) {
-        // 애니메이션 프레임은 정사각형이고 캐릭터가 높이의 약 93%를 차지한다. 멈춘 이미지와 같은 크기로 보이게 맞춘다
-        AnimatedMascot(
-            animation = animation,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = top - height * ANIMATION_LIFT_RATIO)
-                .size(height * ANIMATION_SIZE_RATIO),
-        )
-    } else {
-        Mascot(
-            character = character,
-            pose = MascotPose.Sitting,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = top)
-                .height(height),
-        )
-    }
-}
-
 /**
  * S06 기본 보기. 왼쪽 무대에서 친구가 춤추고, 오른쪽에서 제목·가사·재생 막대를 보여 준다.
  * 가사 줄을 누르면 그 부분부터 듣는다.
@@ -421,8 +367,17 @@ private fun BasicView(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
                     SongTitle(song.title)
-                    LyricsPanel(song, positionMillis, onSeek)
-                    BasicPlayer(isPlaying, positionMillis, song.durationMillis, onTogglePlay, onSeek)
+                    SongLyricsList(
+                        lines = song.lyrics,
+                        current = lyricIndexAt(song, positionMillis),
+                        sections = song.lyricSections,
+                        activeText = { highlightWord(song.lyrics[it], song.highlightWord) },
+                        onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(LyricsPanelHeight),
+                    )
+                    SongProgressPlayer(isPlaying, positionMillis, song.durationMillis, onTogglePlay, onSeek)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                     LargeButton(
@@ -471,157 +426,6 @@ private fun SongTitle(title: String) {
                 Icon(painterResource(R.drawable.ic_edit), contentDescription = "제목 바꾸기", tint = AppColors.TextDarkPrimary, modifier = Modifier.size(44.dp))
             }
         }
-    }
-}
-
-/** 가사 전체. 지금 부르는 줄만 진하게, 단어는 주황으로 칠한다. 벌스·후렴이 바뀌는 곳은 한 줄 띄운다. */
-@Composable
-private fun LyricsPanel(song: CompletedSong, positionMillis: Long, onSeek: (Long) -> Unit) {
-    val current = lyricIndexAt(song, positionMillis)
-    val listState = rememberLazyListState()
-    LaunchedEffect(current) {
-        if (song.lyrics.isNotEmpty()) listState.animateScrollToItem((current - 1).coerceAtLeast(0))
-    }
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(LyricsPanelHeight)
-            .clip(LyricsPanelShape)
-            .background(AppColors.SurfaceBasic),
-        contentPadding = PaddingValues(horizontal = 40.dp, vertical = 36.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp),
-    ) {
-        itemsIndexed(song.lyrics) { index, line ->
-            val section = song.lyricSections.getOrNull(index)
-            if (index > 0 && section != null && section != song.lyricSections.getOrNull(index - 1)) Spacer(Modifier.height(30.dp))
-            val active = index == current
-            Text(
-                text = if (active) highlighted(line, song.highlightWord) else AnnotatedString(line),
-                style = if (active) AppTypography.TitleLargeExtraStrong else AppTypography.TitleLargeNormal,
-                color = if (active) AppColors.TextDarkPrimary else AppColors.RecordingTime,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .then(
-                        song.lyricStartsMillis.getOrNull(index)?.let { start ->
-                            Modifier.clickable(role = Role.Button) { onSeek(start) }
-                        } ?: Modifier,
-                    ),
-            )
-        }
-    }
-}
-
-private fun highlighted(line: String, word: String?): AnnotatedString = buildAnnotatedString {
-    append(line)
-    if (!word.isNullOrBlank()) {
-        var from = line.indexOf(word)
-        while (from >= 0) {
-            addStyle(SpanStyle(color = AppColors.BrandOrange), from, from + word.length)
-            from = line.indexOf(word, from + word.length)
-        }
-    }
-}
-
-@Composable
-private fun BasicPlayer(isPlaying: Boolean, positionMillis: Long, durationMillis: Long, onTogglePlay: () -> Unit, onSeek: (Long) -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .background(AppColors.BasicPlayButton)
-                .clickable(role = Role.Button, onClick = onTogglePlay),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                painterResource(if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play),
-                contentDescription = if (isPlaying) "멈추기" else "재생",
-                tint = AppColors.BasicStaticLight100,
-                modifier = Modifier.size(52.dp),
-            )
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            val fraction = if (durationMillis > 0) (positionMillis.toFloat() / durationMillis).coerceIn(0f, 1f) else 0f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .clip(ProgressShape)
-                    .background(AppColors.BasicProgressTrack)
-                    .pointerInput(durationMillis) {
-                        detectTapGestures { offset -> if (durationMillis > 0) onSeek((offset.x / size.width * durationMillis).toLong()) }
-                    },
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(fraction)
-                        .fillMaxHeight()
-                        .clip(ProgressShape)
-                        .background(AppColors.BrandOrange),
-                )
-            }
-            Text(
-                "${formatPlayTime(positionMillis)} / ${formatPlayTime(durationMillis)}",
-                style = AppTypography.LabelMedium,
-                color = AppColors.RecordingTime,
-            )
-        }
-    }
-}
-
-private fun DrawScope.drawParticle(particle: Particle, nowMillis: Long, center: Offset, note: Painter) {
-    val t = particle.progressAt(nowMillis)
-    // 처음엔 빠르게 퍼지다가 천천히 멈춘다
-    val eased = 1f - (1f - t) * (1f - t)
-    val radians = Math.toRadians(particle.angleDegrees.toDouble())
-    val distance = ParticleStartRadius.toPx() + particle.distanceDp.dp.toPx() * eased
-    val position = center + Offset((cos(radians) * distance).toFloat(), (sin(radians) * distance).toFloat())
-    val side = particle.sizeDp.dp.toPx()
-    val alpha = 1f - t
-    translate(position.x, position.y) {
-        rotate(particle.rotationDegrees * eased, pivot = Offset.Zero) {
-            when (particle.shape) {
-                ParticleShape.OrangeNote, ParticleShape.YellowNote -> {
-                    val color = if (particle.shape == ParticleShape.OrangeNote) AppColors.ParticleOrange else AppColors.ParticleYellow
-                    translate(-side, -side) {
-                        with(note) { draw(Size(side * 2, side * 2), alpha = alpha, colorFilter = ColorFilter.tint(color)) }
-                    }
-                }
-                ParticleShape.OrangeDot -> drawCircle(AppColors.ParticleOrange, radius = side / 2, center = Offset.Zero, alpha = alpha)
-                ParticleShape.OrangeTile -> drawRoundRect(
-                    color = AppColors.ParticleOrange,
-                    topLeft = Offset(-side / 2, -side / 2),
-                    size = Size(side, side),
-                    cornerRadius = CornerRadius(side / 3),
-                    alpha = alpha,
-                )
-                ParticleShape.YellowTile -> drawRoundRect(
-                    color = AppColors.ParticleYellow,
-                    topLeft = Offset(-side * 0.8f, -side / 2),
-                    size = Size(side * 1.6f, side),
-                    cornerRadius = CornerRadius(side / 2),
-                    alpha = alpha,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun StageViewButton(text: String, icon: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .width(258.dp)
-            .height(87.dp)
-            .clip(PillShape)
-            .background(AppColors.ButtonWarmSecondary)
-            .clickable(role = Role.Button, onClick = onClick),
-        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(painterResource(icon), contentDescription = null, tint = AppColors.TextWarmStrong, modifier = Modifier.size(52.dp))
-        Text(text, style = ShrinkLabelStyle, color = AppColors.TextWarmStrong)
     }
 }
 

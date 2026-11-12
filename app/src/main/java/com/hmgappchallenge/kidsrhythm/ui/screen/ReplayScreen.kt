@@ -1,13 +1,22 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -16,33 +25,75 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.archive.ArchivedMember
+import com.hmgappchallenge.kidsrhythm.archive.ArchivedSong
 import com.hmgappchallenge.kidsrhythm.archive.durationLabel
+import com.hmgappchallenge.kidsrhythm.audio.SongPlayer
+import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
+import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
-import com.hmgappchallenge.kidsrhythm.ui.component.LyricsBox
+import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.MessagePopup
-import com.hmgappchallenge.kidsrhythm.ui.component.PlayerBar
 import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
+import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
+import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
+import com.hmgappchallenge.kidsrhythm.ui.component.SongProgressPlayer
+import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
+import com.hmgappchallenge.kidsrhythm.ui.component.StageViewButton
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
+import com.hmgappchallenge.kidsrhythm.ui.component.currentLyricIndex
+import com.hmgappchallenge.kidsrhythm.ui.component.lyricText
+import com.hmgappchallenge.kidsrhythm.ui.component.mascotAnimationFor
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import java.time.Instant
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 
-/** S07 다시 듣기. 함께한 가족과 악기, 가사(지금 부르는 줄 강조, 줄 눌러 듣기), 재생, 지우기. */
+private val StageShape = RoundedCornerShape(48.dp)
+private val LyricBoxShape = RoundedCornerShape(32.dp)
+private val LyricLineShape = RoundedCornerShape(16.dp)
+
+/** 지금 줄이 아닌 가사 (30/38 Regular). 공용 타이포 토큰에 없는 굵기라 여기서만 쓴다. */
+private val LyricOtherStyle = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.Normal)
+
+/** 정차 중 무대 높이와 친구 위치. */
+private val StageHeight = 507.dp
+private val StageFloorTop = 364.dp
+private val CharacterTop = 84.dp
+private val CharacterHeight = 351.dp
+
+/**
+ * S07-1 다시 듣기. 주행 중에는 친구 없이 제목·가족·가사·재생 막대만 보여 주고(CarUxRestrictions),
+ * 정차 중에는 무대에서 친구가 춤추고 아래에 지금 가사 몇 줄과 미니 플레이어를 보여 준다.
+ */
 @Composable
-fun ReplayRoute(services: AppServices, songId: Long, onBack: () -> Unit) {
+fun ReplayRoute(
+    services: AppServices,
+    songId: Long,
+    driving: Boolean,
+    character: MascotCharacter,
+    onBack: () -> Unit,
+    onOpenSong: (Long) -> Unit,
+    onChangeCharacter: () -> Unit,
+) {
     val songs by services.archive.songs.collectAsState()
     val song = songs.firstOrNull { it.id == songId }
     val player = services.player
@@ -59,74 +110,256 @@ fun ReplayRoute(services: AppServices, songId: Long, onBack: () -> Unit) {
         player.load(song.audioFilePath, autoplay = true, knownDurationMs = song.durationMillis)
     }
     PlayerTicker(player)
-    val created = Instant.ofEpochMilli(song.createdAtMillis).atZone(ZoneId.systemDefault()).toLocalDate()
-    SubPage(
-        title = "다시 듣기",
-        onBack = onBack,
-        overlay = {
-            if (confirmDelete) {
-                MessagePopup(
-                    title = "노래를 지울까요?",
-                    message = "'${song.title}'을 지우면 다시 들을 수 없어요.",
-                    primaryText = "지우기",
-                    onPrimary = {
-                        if (!deleting) {
-                            deleting = true
-                            player.release()
-                            scope.launch {
-                                services.archive.delete(song.id)
-                                onBack()
-                            }
+    val onNext = {
+        val next = songs[(songs.indexOf(song) + 1) % songs.size]
+        if (next.id != song.id) onOpenSong(next.id) else player.seekTo(0)
+    }
+    val overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {
+        if (confirmDelete) {
+            MessagePopup(
+                title = "노래를 지울까요?",
+                message = "'${song.title}'을 지우면 다시 들을 수 없어요.",
+                primaryText = "지우기",
+                onPrimary = {
+                    if (!deleting) {
+                        deleting = true
+                        player.release()
+                        scope.launch {
+                            services.archive.delete(song.id)
+                            onBack()
                         }
-                    },
-                    secondaryText = "취소",
-                    onSecondary = { confirmDelete = false },
-                    primaryIcon = R.drawable.ic_trash,
-                    secondaryIcon = R.drawable.ic_close,
-                    destructive = true,
-                )
-            }
-        },
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("${created.monthValue}/${created.dayOfMonth} 만든 노래 · ${durationLabel(song.durationMillis)}", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
-            Text(song.title, style = AppTypography.HeadlineLarge, color = AppColors.TextDarkPrimary, maxLines = 1)
-        }
-        if (song.members.isNotEmpty()) {
-            Row(modifier = Modifier.padding(top = 20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                song.members.forEach { MemberChip(it) }
-            }
-        }
-        LyricsBox(
-            lines = song.lyricLines,
-            positionMs = player.positionMs,
-            onSeek = player::seekTo,
-            modifier = Modifier
-                .padding(top = 24.dp)
-                .weight(1f)
-                .fillMaxWidth(),
-        )
-        PlayerBar(
-            isPlaying = player.isPlaying,
-            positionMs = player.positionMs,
-            durationMs = player.durationMs.takeIf { it > 0 } ?: song.durationMillis,
-            onToggle = player::toggle,
-            onSeek = player::seekTo,
-            modifier = Modifier
-                .padding(top = 24.dp)
-                .fillMaxWidth(),
-        )
-        Row(modifier = Modifier.padding(top = 24.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            LargeButton(text = "다른 노래 듣기", onClick = onBack, icon = R.drawable.ic_music, modifier = Modifier.weight(1f))
-            LargeButton(
-                text = "지우기",
-                onClick = { confirmDelete = true },
-                icon = R.drawable.ic_trash,
-                variant = LargeButtonVariant.Secondary,
-                modifier = Modifier.width(320.dp),
+                    }
+                },
+                secondaryText = "취소",
+                onSecondary = { confirmDelete = false },
+                primaryIcon = R.drawable.ic_trash,
+                secondaryIcon = R.drawable.ic_close,
+                destructive = true,
             )
         }
     }
+    if (driving) {
+        SubPage(title = "다시 듣기", onBack = onBack, overlay = overlay) {
+            DrivingReplay(song, player, onNext = onNext, onOtherSongs = onBack, onDelete = { confirmDelete = true })
+        }
+    } else {
+        SubPage(
+            title = "다시 듣기",
+            onBack = onBack,
+            overlay = overlay,
+            headerActions = {
+                LargeButton(
+                    text = "친구 바꾸기",
+                    onClick = onChangeCharacter,
+                    icon = R.drawable.ic_paw,
+                    variant = LargeButtonVariant.Secondary,
+                    modifier = Modifier.widthIn(min = 279.dp),
+                )
+            },
+        ) {
+            StoppedReplay(song, player, character, onNext = onNext, onOtherSongs = onBack, onDelete = { confirmDelete = true })
+        }
+    }
+}
+
+/** 주행 중: 친구 없이 제목·가족·가사 전체·재생 막대. */
+@Composable
+private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, onNext: () -> Unit, onOtherSongs: () -> Unit, onDelete: () -> Unit) {
+    val created = Instant.ofEpochMilli(song.createdAtMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+    val lines = song.lyricLines
+    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(32.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                "${created.monthValue}/${created.dayOfMonth} 만든 노래 · ${durationLabel(song.durationMillis)}",
+                style = AppTypography.LabelMedium,
+                color = AppColors.SongMeta,
+            )
+            Text(song.title, style = AppTypography.HeadlineLarge, color = AppColors.TextDarkPrimary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (song.members.isNotEmpty()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                song.members.forEach { MemberChip(it) }
+            }
+        }
+        SongLyricsList(
+            lines = lines.map { it.text },
+            current = currentLyricIndex(lines, player.positionMs).coerceAtLeast(0),
+            sections = lines.map { it.section },
+            activeText = { lyricText(lines[it]) },
+            onLineClick = { player.seekTo(lines[it].startMs) },
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        )
+        SongProgressPlayer(
+            isPlaying = player.isPlaying,
+            positionMillis = player.positionMs,
+            durationMillis = player.durationMs.takeIf { it > 0 } ?: song.durationMillis,
+            onTogglePlay = player::toggle,
+            onSeek = player::seekTo,
+            onNext = onNext,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    ReplayActions(onOtherSongs, onDelete, modifier = Modifier.padding(top = 31.dp))
+}
+
+/**
+ * 정차 중: 왼쪽 무대에서 친구가 춤추고, 오른쪽에 가사 접기·다른 노래 듣기·지우기.
+ * 아래에 지난 줄·지금 줄·다음 두 줄과 미니 플레이어를 둔다. 가사를 접거나 크게 보면 가사 줄을 숨긴다.
+ */
+@Composable
+private fun ColumnScope.StoppedReplay(
+    song: ArchivedSong,
+    player: SongPlayer,
+    character: MascotCharacter,
+    onNext: () -> Unit,
+    onOtherSongs: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    var lyricsFolded by rememberSaveable { mutableStateOf(false) }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (lyricsFolded) Modifier.weight(1f) else Modifier.height(StageHeight)),
+        horizontalArrangement = Arrangement.spacedBy(48.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .clip(StageShape)
+                .background(AppColors.CompletedStageBackground),
+        ) {
+            StageFloor(top = StageFloorTop)
+            DancingCharacter(
+                character,
+                animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
+                top = CharacterTop,
+                height = CharacterHeight,
+            )
+            // TODO(디자인): 크게 보기·가사 접기가 어떤 화면으로 가는지 정해지면 맞춘다. 지금은 둘 다 가사 줄을 숨긴다
+            StageViewButton(
+                text = if (lyricsFolded) "작게 보기" else "크게 보기",
+                icon = if (lyricsFolded) R.drawable.ic_shrink else R.drawable.ic_expand,
+                onClick = { lyricsFolded = !lyricsFolded },
+                modifier = Modifier.offset(x = 39.dp, y = 36.dp),
+            )
+        }
+        Column(modifier = Modifier.width(700.dp)) {
+            Spacer(Modifier.height(94.dp))
+            Text(
+                "가사 줄을 누르면 그 부분부터 들어요",
+                style = AppTypography.LabelMedium,
+                color = AppColors.ReplayHint,
+                modifier = Modifier.align(Alignment.End),
+            )
+            Spacer(Modifier.height(13.dp))
+            LargeButton(
+                text = if (lyricsFolded) "가사 보기" else "가사 접기",
+                onClick = { lyricsFolded = !lyricsFolded },
+                icon = if (lyricsFolded) R.drawable.ic_expand else R.drawable.ic_shrink,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(58.dp))
+            LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.fillMaxWidth())
+            Spacer(Modifier.height(14.dp))
+            LargeButton(
+                text = "지우기",
+                onClick = onDelete,
+                icon = R.drawable.ic_trash,
+                variant = LargeButtonVariant.Secondary,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+    if (!lyricsFolded) {
+        CurrentLyrics(song, player, modifier = Modifier.padding(top = 30.dp).fillMaxWidth().height(232.dp))
+        Spacer(Modifier.weight(1f))
+    }
+    val duration = player.durationMs.takeIf { it > 0 } ?: song.durationMillis
+    SongMiniPlayer(
+        title = song.title,
+        subtitle = song.members.joinToString(" · ") { memberLabel(it) },
+        progress = if (duration > 0) player.positionMs.toFloat() / duration else 0f,
+        isPlaying = player.isPlaying,
+        onTogglePlay = player::toggle,
+        onNext = onNext,
+        buttonSize = 63.dp,
+        modifier = Modifier
+            .padding(top = 38.dp)
+            .fillMaxWidth(),
+    )
+}
+
+/** 지난 줄 하나, 지금 줄(주황 바탕), 다음 두 줄. 아래로 가사가 더 있으면 흐리게 사라진다. */
+@Composable
+private fun CurrentLyrics(song: ArchivedSong, player: SongPlayer, modifier: Modifier = Modifier) {
+    val lines = song.lyricLines
+    val current = currentLyricIndex(lines, player.positionMs).coerceAtLeast(0)
+    Box(
+        modifier = modifier
+            .clip(LyricBoxShape)
+            .background(AppColors.StageBubbleBackground),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            (current - 1..current + 2).filter { it in lines.indices }.forEach { index ->
+                val line = lines[index]
+                val now = index == current
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(LyricLineShape)
+                        .then(if (now) Modifier.background(AppColors.ReplayLyricNow) else Modifier)
+                        .clickable(role = Role.Button) { player.seekTo(line.startMs) }
+                        .padding(start = 16.dp, end = 24.dp, top = if (now) 10.dp else 2.dp, bottom = if (now) 10.dp else 2.dp),
+                ) {
+                    Text(
+                        text = if (now) lyricText(line) else AnnotatedString(line.text),
+                        style = if (now) AppTypography.TitleLargeExtraStrong else LyricOtherStyle,
+                        color = when {
+                            now -> AppColors.TextDarkPrimary
+                            index < current -> AppColors.ReplayLyricPast
+                            else -> AppColors.ReplayLyricNext
+                        },
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+        if (current + 2 < lines.lastIndex) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(55.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, AppColors.SurfaceBasic))),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReplayActions(onOtherSongs: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.weight(1f))
+        LargeButton(
+            text = "지우기",
+            onClick = onDelete,
+            icon = R.drawable.ic_trash,
+            variant = LargeButtonVariant.Secondary,
+            // 시안 너비 242에서는 글자가 잘릴 수 있어, 다 보이는 만큼만 넓힌다
+            modifier = Modifier.widthIn(min = 242.dp),
+        )
+    }
+}
+
+private fun memberLabel(member: ArchivedMember): String {
+    val instrument = Instrument.entries.firstOrNull { it.name == member.instrument }?.label ?: member.instrument
+    return "${member.name} $instrument".trim()
 }
 
 @Composable
@@ -135,13 +368,13 @@ private fun MemberChip(member: ArchivedMember) {
     Row(
         modifier = Modifier
             .clip(CircleShape)
-            .background(AppColors.SurfaceBasic)
-            .padding(start = 8.dp, end = 24.dp, top = 8.dp, bottom = 8.dp),
+            .background(AppColors.StageBubbleBackground)
+            .padding(start = 8.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (instrument != null) InstrumentBadge(instrument, size = 56.dp)
+        if (instrument != null) InstrumentBadge(instrument, size = 48.dp)
         if (member.name.isNotEmpty()) Text(member.name, style = AppTypography.BodySmallStrong, color = AppColors.TextDarkPrimary)
-        Text(instrument?.label ?: member.instrument, style = AppTypography.BodySmallStrong, color = AppColors.TextDarkTertiary)
+        Text(instrument?.label ?: member.instrument, style = AppTypography.LabelMedium, color = AppColors.ReplayMemberInstrument)
     }
 }

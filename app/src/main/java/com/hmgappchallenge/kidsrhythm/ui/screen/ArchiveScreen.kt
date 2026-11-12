@@ -36,15 +36,15 @@ import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.ui.component.AppTab
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.MessagePopup
-import com.hmgappchallenge.kidsrhythm.ui.component.PlayerBar
 import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
 import com.hmgappchallenge.kidsrhythm.ui.component.SongRow
 import com.hmgappchallenge.kidsrhythm.ui.component.TabPage
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlinx.coroutines.launch
-
-private val MiniPlayerShape = RoundedCornerShape(32.dp)
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
+import com.hmgappchallenge.kidsrhythm.ui.component.songTone
 
 /** S07 보관함. 노래 목록, 길게 눌러 지우기, 아래 미니 플레이어. 줄을 누르면 다시 듣기로 간다. */
 @Composable
@@ -93,12 +93,12 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
             }
             return@TabPage
         }
-        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
             Spacer(Modifier.weight(1f))
-            Text("노래 ${songs.size}곡", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+            Text("노래 ${songs.size}곡", style = AppTypography.LabelMedium, color = AppColors.SongMeta)
         }
-        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(18.dp)) {
-            items(songs, key = { it.id }) { song ->
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            itemsIndexed(songs, key = { _, song -> song.id }) { index, song ->
                 Box(
                     modifier = Modifier.pointerInput(song.id) {
                         detectTapGestures(onTap = { onOpenSong(song.id) }, onLongPress = { deleting = song })
@@ -108,6 +108,7 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
                         title = song.title,
                         meta = songMetaLabel(song, now),
                         onPlay = { player.load(song.audioFilePath, autoplay = true, knownDurationMs = song.durationMillis) },
+                        tone = songTone(index),
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -116,31 +117,29 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
                 Text(
                     "길게 누르면 노래를 지울 수 있어요",
                     style = AppTypography.LabelMedium,
-                    color = AppColors.TextDarkTertiary,
-                    modifier = Modifier.padding(top = 12.dp, start = 8.dp),
+                    color = AppColors.HintChipText,
+                    modifier = Modifier.padding(top = 16.dp),
                 )
             }
         }
         if (playing != null) {
-            PlayerBar(
-                isPlaying = player.isPlaying,
-                positionMs = player.positionMs,
-                durationMs = player.durationMs,
-                onToggle = player::toggle,
-                onSeek = player::seekTo,
+            val index = songs.indexOf(playing)
+            val duration = player.durationMs.takeIf { it > 0 } ?: playing.durationMillis
+            // 줄 ▶는 목록에서 바로 틀고, 미니 플레이어를 누르면 그 곡의 다시 듣기로 간다
+            SongMiniPlayer(
                 title = playing.title,
+                progress = if (duration > 0) player.positionMs.toFloat() / duration else 0f,
+                isPlaying = player.isPlaying,
+                onTogglePlay = player::toggle,
                 onNext = {
-                    val i = songs.indexOf(playing)
-                    val next = songs[(i + 1) % songs.size]
+                    val next = songs[(index + 1) % songs.size]
                     player.load(next.audioFilePath, autoplay = true, knownDurationMs = next.durationMillis)
                 },
+                tone = songTone(index),
+                onClick = { onOpenSong(playing.id) },
                 modifier = Modifier
                     .padding(top = 24.dp)
-                    .fillMaxWidth()
-                    .clip(MiniPlayerShape)
-                    .background(AppColors.SurfaceBasic)
-                    .border(2.dp, AppColors.BasicAlphaLight50, MiniPlayerShape)
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .fillMaxWidth(),
             )
         }
     }
