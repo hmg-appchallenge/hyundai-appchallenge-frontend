@@ -56,6 +56,7 @@ import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.completed.CompletedSong
 import com.hmgappchallenge.kidsrhythm.completed.Particle
 import com.hmgappchallenge.kidsrhythm.completed.ParticleShape
+import com.hmgappchallenge.kidsrhythm.completed.dateTitle
 import com.hmgappchallenge.kidsrhythm.completed.formatPlayTime
 import com.hmgappchallenge.kidsrhythm.completed.lyricIndexAt
 import com.hmgappchallenge.kidsrhythm.completed.nextSpawnDelay
@@ -77,6 +78,7 @@ import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
+import java.time.ZoneId
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -393,7 +395,9 @@ private fun BasicView(
                 verticalArrangement = Arrangement.SpaceBetween,
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
-                    SongTitle(song.title, onEdit = { editingTitle = true })
+                    // 들린 단어가 없어 날짜 제목이 붙었으면 제목을 지어 달라고 한다
+                    val needsTitle = song.highlightWord == null && song.title == dateTitle(song.createdAtMillis, ZoneId.systemDefault())
+                    SongTitle(song.title, label = if (needsTitle) "제목을 지어주세요." else "오늘 만든 노래", onEdit = { editingTitle = true })
                     SongLyricsList(
                         lines = song.lyrics,
                         current = lyricIndexAt(song, positionMillis),
@@ -429,9 +433,9 @@ private fun BasicView(
 }
 
 @Composable
-private fun SongTitle(title: String, onEdit: () -> Unit) {
+private fun SongTitle(title: String, label: String, onEdit: () -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text("오늘 만든 노래", style = AppTypography.LabelMedium, color = AppColors.HintChipText)
+        Text(label, style = AppTypography.LabelMedium, color = AppColors.HintChipText)
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title,

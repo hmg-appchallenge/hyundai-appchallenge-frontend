@@ -71,6 +71,7 @@ data class SettingsState(
     val consentAgreed: Boolean,
     val songsLabel: String,
     val hasSongs: Boolean,
+    val micGranted: Boolean,
 )
 
 /** S08 설정에서 일어나는 일. */
@@ -86,6 +87,7 @@ class SettingsActions(
     val onWithdrawConsent: () -> Unit,
     val onDeleteVoices: () -> Unit,
     val onDeleteSongs: () -> Unit,
+    val onMicClick: () -> Unit,
 )
 
 private enum class SettingsPopup { ViewMode, RecordingBeat, Withdraw, DeleteVoices, DeleteSongs }
@@ -194,6 +196,15 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                         onAction = { popup = SettingsPopup.DeleteVoices },
                     )
                 }
+                SettingsGroup("권한") {
+                    SettingsRow(
+                        "마이크",
+                        if (state.micGranted) "노래 녹음 · 목소리 등록에 필요해요" else "켜야 노래 녹음과 목소리 등록을 할 수 있어요",
+                        value = if (state.micGranted) "허용됨" else "허용 안 함",
+                        valueColor = if (state.micGranted) AppColors.SwitchOn else AppColors.InformativeNegative,
+                        onClick = actions.onMicClick,
+                    )
+                }
                 SettingsGroup("보관함") {
                     SettingsActionRow(
                         "저장된 노래",
@@ -203,10 +214,7 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                     )
                 }
                 SettingsGroup("앱 정보") {
-                    SettingsRow("버전", null, value = "0.1 (공모전 데모)", onClick = null)
-                    SettingsDivider()
-                    // TODO(기획): 팀 연락처가 정해지면 문의 방법을 연결한다
-                    SettingsRow("문의하기", "[팀 연락처]", onClick = {})
+                    SettingsRow("버전 0.1 (공모전 데모)", "문의 · $TEAM_CONTACT_EMAIL", onClick = null)
                 }
             }
         }
@@ -259,9 +267,15 @@ private fun SettingsRowFrame(title: String, subtitle: String?, onClick: (() -> U
 
 /** 값과 › 가 있는 줄. [onClick]이 없으면 값만 보여 준다. */
 @Composable
-private fun SettingsRow(title: String, subtitle: String?, value: String? = null, onClick: (() -> Unit)?) {
+private fun SettingsRow(
+    title: String,
+    subtitle: String?,
+    value: String? = null,
+    valueColor: Color = AppColors.TextDarkPrimary,
+    onClick: (() -> Unit)?,
+) {
     SettingsRowFrame(title, subtitle, onClick) {
-        if (value != null) Text(value, style = AppTypography.BodySmallStrong, color = AppColors.TextDarkPrimary)
+        if (value != null) Text(value, style = AppTypography.BodySmallStrong, color = valueColor)
         if (onClick != null) {
             Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = AppColors.SongMeta, modifier = Modifier.size(40.dp))
         }
@@ -275,7 +289,7 @@ private fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean,
     }
 }
 
-/** 오른쪽에 빨간 동작 버튼(철회·삭제)이 있는 줄. [actionText]가 없으면 버튼을 숨긴다. */
+/** 오른쪽에 동작 버튼(철회·삭제, 연한 바탕에 빨간 글자)이 있는 줄. [actionText]가 없으면 버튼을 숨긴다. */
 @Composable
 private fun SettingsActionRow(title: String, subtitle: String, actionText: String?, onAction: () -> Unit) {
     SettingsRowFrame(title, subtitle, onClick = null) {
@@ -284,12 +298,12 @@ private fun SettingsActionRow(title: String, subtitle: String, actionText: Strin
                 modifier = Modifier
                     .height(72.dp)
                     .clip(ActionShape)
-                    .background(AppColors.InformativeNegative)
+                    .background(AppColors.SettingsActionBackground)
                     .clickable(role = Role.Button, onClick = onAction)
                     .padding(horizontal = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(actionText, style = AppTypography.BodySmallStrong, color = AppColors.SettingsActionText)
+                Text(actionText, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative)
             }
         }
     }
@@ -440,8 +454,8 @@ private fun BoxScope.RecordingBeatPopup(current: RecordingBeatLevel, onCancel: (
 private fun SettingsScreenPreview() {
     Box(Modifier.fillMaxSize()) {
         SettingsScreen(
-            state = SettingsState(3, "부릉이", SongViewMode.Basic, true, true, RecordingBeatLevel.Small, "동의함 · 2026.11.07 · 철회하면 녹음이 꺼져요", true, "4곡 · 12MB · 이 차에만 저장돼요", true),
-            actions = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
+            state = SettingsState(3, "부릉이", SongViewMode.Basic, true, true, RecordingBeatLevel.Small, "동의함 · 2026.11.07 · 철회하면 녹음이 꺼져요", true, "4곡 · 12MB · 이 차에만 저장돼요", true, micGranted = false),
+            actions = SettingsActions({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}),
         )
     }
 }

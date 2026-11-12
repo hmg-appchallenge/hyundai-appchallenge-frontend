@@ -85,6 +85,8 @@ object AppColors {
 
     // 토스트
     val ToastBackground = Color(0xFF44464E)
+    val SnackbarBackground = AppPalette.WarmGray900
+    val SnackbarContent = AppPalette.WarmWhite100
 
     // 목소리 카드 (연주 중 / 대기)
     val VoiceCardName = AppPalette.WarmBlack1000
@@ -140,7 +142,7 @@ object AppColors {
     val ReplayLyricNext = Color(0xCC181310)
     val SettingsGroupBackground = AppPalette.WarmGray100
     val SettingsDivider = AppPalette.WarmGray300
-    val SettingsActionText = AppPalette.WarmBlack100
+    val SettingsActionBackground = Color(0x0D131417)
     val SwitchOn = Color(0xFF02C265)
     val RadioOffBorder = Color(0x4D131417)
     val ParticleOrange = AppPalette.Orange500

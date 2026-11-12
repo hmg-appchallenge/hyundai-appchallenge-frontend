@@ -23,7 +23,7 @@ data class CompletedSong(
 
 /**
  * 서버 결과로 완성곡을 만든다. 제목은 서버 제목(AI 실패 시 서버가 "첫 단어 + 노래"로 짓는다)을 쓰고,
- * 비어 오면 "첫 단어 노래" → "M월 d일 노래" 순으로 정한다.
+ * 비어 오면 "첫 단어 노래" → "M월 d일 드라이브 노래" 순으로 정한다.
  */
 fun completedSongOf(
     result: SongResult,
@@ -44,10 +44,10 @@ fun completedSongOf(
     )
 }
 
-/** 들린 단어가 없을 때 붙는 제목. 예: "11월 11일 노래" */
+/** 들린 단어가 없을 때 붙는 제목. 예: "11월 11일 드라이브 노래" */
 internal fun dateTitle(nowMillis: Long, zone: ZoneId): String {
     val date = Instant.ofEpochMilli(nowMillis).atZone(zone).toLocalDate()
-    return "${date.monthValue}월 ${date.dayOfMonth}일 노래"
+    return "${date.monthValue}월 ${date.dayOfMonth}일 드라이브 노래"
 }
 
 /** 지금 부르는 가사 줄. 줄마다 시작 시간이 있으면 그것으로, 없으면 곡 길이를 줄 수로 똑같이 나눠 고른다. */

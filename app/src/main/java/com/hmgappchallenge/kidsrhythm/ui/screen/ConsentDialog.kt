@@ -48,7 +48,7 @@ private data class ConsentItem(@DrawableRes val icon: Int, val title: String, va
 
 private val ConsentItems = listOf(
     ConsentItem(R.drawable.ic_mic, "무엇을 쓰나요", "멤버 목소리를 녹음해 가사와 노래를 만들어요"),
-    ConsentItem(R.drawable.ic_shield, "어디로 보내나요", "음성 인식(Pleos Gleo AI)과 노래 생성 서버로 보내요. 학습에는 쓰지 않아요"),
+    ConsentItem(R.drawable.ic_shield, "어디로 보내나요", "목소리는 노래 생성 서버에서 글자로 바꾸고, 들린 단어만 외부 AI(Claude · ElevenLabs)로 보내 노래를 만들어요. 학습에는 쓰지 않아요"),
     ConsentItem(R.drawable.ic_trash, "언제 지우나요", "녹음 원본은 노래가 완성되면 바로 지우고, 노래는 이 차에만 저장해요"),
 )
 

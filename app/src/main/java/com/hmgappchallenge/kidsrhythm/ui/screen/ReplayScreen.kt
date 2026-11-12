@@ -50,7 +50,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
-import com.hmgappchallenge.kidsrhythm.ui.component.MessagePopup
+import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
 import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
 import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
 import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
@@ -79,6 +79,12 @@ private val StageHeight = 507.dp
 private val StageFloorTop = 364.dp
 private val CharacterTop = 84.dp
 private val CharacterHeight = 351.dp
+
+// 크게 보기는 S06 크게 보기와 같은 무대 크기를 쓴다
+private val BigStageHeight = 598.dp
+private val BigFloorTop = 480.dp
+private val BigCharacterTop = 103.dp
+private val BigCharacterHeight = 430.dp
 
 /**
  * S07-1 다시 듣기. 주행 중에는 친구 없이 제목·가족·가사·재생 막대만 보여 주고(CarUxRestrictions),
@@ -116,11 +122,13 @@ fun ReplayRoute(
     }
     val overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {
         if (confirmDelete) {
-            MessagePopup(
-                title = "노래를 지울까요?",
-                message = "'${song.title}'을 지우면 다시 들을 수 없어요.",
-                primaryText = "지우기",
-                onPrimary = {
+            WarmConfirmPopup(
+                title = "저장된 노래를 지울까요?",
+                message = "삭제한 노래는 복구할 수 없으며,\n삭제 후에는 다시 이용할 수 없습니다.",
+                cancelText = "취소",
+                onCancel = { confirmDelete = false },
+                confirmText = "지우기",
+                onConfirm = {
                     if (!deleting) {
                         deleting = true
                         player.release()
@@ -130,11 +138,7 @@ fun ReplayRoute(
                         }
                     }
                 },
-                secondaryText = "취소",
-                onSecondary = { confirmDelete = false },
-                primaryIcon = R.drawable.ic_trash,
-                secondaryIcon = R.drawable.ic_close,
-                destructive = true,
+                confirmIcon = R.drawable.ic_trash,
             )
         }
     }
@@ -206,7 +210,8 @@ private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, on
 
 /**
  * 정차 중: 왼쪽 무대에서 친구가 춤추고, 오른쪽에 가사 접기·다른 노래 듣기·지우기.
- * 아래에 지난 줄·지금 줄·다음 두 줄과 미니 플레이어를 둔다. 가사를 접거나 크게 보면 가사 줄을 숨긴다.
+ * 아래에 지난 줄·지금 줄·다음 두 줄과 미니 플레이어를 둔다.
+ * 가사 접기는 가사 줄을 숨기고, 크게 보기는 S06 크게 보기처럼 무대를 넓힌다.
  */
 @Composable
 private fun ColumnScope.StoppedReplay(
@@ -218,6 +223,11 @@ private fun ColumnScope.StoppedReplay(
     onDelete: () -> Unit,
 ) {
     var lyricsFolded by rememberSaveable { mutableStateOf(false) }
+    var enlarged by rememberSaveable { mutableStateOf(false) }
+    if (enlarged) {
+        EnlargedReplay(song, player, character, onShrink = { enlarged = false }, onNext = onNext, onOtherSongs = onOtherSongs, onDelete = onDelete)
+        return
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -238,11 +248,10 @@ private fun ColumnScope.StoppedReplay(
                 top = CharacterTop,
                 height = CharacterHeight,
             )
-            // TODO(디자인): 크게 보기·가사 접기가 어떤 화면으로 가는지 정해지면 맞춘다. 지금은 둘 다 가사 줄을 숨긴다
             StageViewButton(
-                text = if (lyricsFolded) "작게 보기" else "크게 보기",
-                icon = if (lyricsFolded) R.drawable.ic_shrink else R.drawable.ic_expand,
-                onClick = { lyricsFolded = !lyricsFolded },
+                text = "크게 보기",
+                icon = R.drawable.ic_expand,
+                onClick = { enlarged = true },
                 modifier = Modifier.offset(x = 39.dp, y = 36.dp),
             )
         }
@@ -277,6 +286,48 @@ private fun ColumnScope.StoppedReplay(
         CurrentLyrics(song, player, modifier = Modifier.padding(top = 30.dp).fillMaxWidth().height(232.dp))
         Spacer(Modifier.weight(1f))
     }
+    ReplayMiniPlayer(song, player, onNext, modifier = Modifier.padding(top = 38.dp).fillMaxWidth())
+}
+
+/** 정차 중 크게 보기: 무대를 가로로 넓히고, 아래에 다른 노래 듣기·지우기와 미니 플레이어를 둔다. */
+@Composable
+private fun ColumnScope.EnlargedReplay(
+    song: ArchivedSong,
+    player: SongPlayer,
+    character: MascotCharacter,
+    onShrink: () -> Unit,
+    onNext: () -> Unit,
+    onOtherSongs: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(BigStageHeight)
+            .clip(StageShape)
+            .background(AppColors.CompletedStageBackground),
+    ) {
+        StageFloor(top = BigFloorTop)
+        DancingCharacter(
+            character,
+            animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
+            top = BigCharacterTop,
+            height = BigCharacterHeight,
+        )
+        StageViewButton(
+            text = "작게 보기",
+            icon = R.drawable.ic_shrink,
+            onClick = onShrink,
+            modifier = Modifier.offset(x = 39.dp, y = 36.dp),
+        )
+    }
+    ReplayActions(onOtherSongs, onDelete, modifier = Modifier.padding(top = 32.dp).fillMaxWidth())
+    Spacer(Modifier.weight(1f))
+    ReplayMiniPlayer(song, player, onNext, modifier = Modifier.fillMaxWidth())
+}
+
+@Composable
+private fun ReplayMiniPlayer(song: ArchivedSong, player: SongPlayer, onNext: () -> Unit, modifier: Modifier = Modifier) {
     val duration = player.durationMs.takeIf { it > 0 } ?: song.durationMillis
     SongMiniPlayer(
         title = song.title,
@@ -286,9 +337,7 @@ private fun ColumnScope.StoppedReplay(
         onTogglePlay = player::toggle,
         onNext = onNext,
         buttonSize = 63.dp,
-        modifier = Modifier
-            .padding(top = 38.dp)
-            .fillMaxWidth(),
+        modifier = modifier,
     )
 }
 

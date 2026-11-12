@@ -48,10 +48,13 @@ private val TocTitleStyle = AppTypography.TitleSmall.copy(fontSize = AppTypograp
 private val SectionTitleStyle = AppTypography.TitleSmall.copy(fontWeight = FontWeight.ExtraBold)
 private val SectionBodyStyle = AppTypography.TitleSmall.copy(fontSize = AppTypography.TitleSmall.fontSize * 28 / 32, fontWeight = FontWeight.Normal)
 
+/** 문의 메일. S00-1 6. 문의와 S08 문의하기에 같이 쓴다. */
+const val TEAM_CONTACT_EMAIL = "drivebeat.team@gmail.com"
+
 /** 처리방침 한 절. 목차에는 [tocTitle]이 들어간다 (6. 문의는 목차에 없다). */
 data class PolicySection(val tocTitle: String?, val title: String, val body: String)
 
-// TODO(기획): 3번 처리 위치(Gleo)와 4번 보관 기간(최대 24시간)은 실제 동작(서버가 인식, 완성 즉시 삭제)과 달라 기획 확인 후 고친다
+// TODO(기획): 본문 전체와 국외 이전 내용은 기획이 확정하면 맞춘다
 val PrivacyPolicySections = listOf(
     PolicySection(
         "수집하는 정보",
@@ -66,20 +69,19 @@ val PrivacyPolicySections = listOf(
     PolicySection(
         "어디서 처리하나요",
         "3. 어디서 처리하나요",
-        "음성 인식은 Pleos Gleo AI, 가사·음악 생성은 노래 생성 서버(외부 AI 서비스)에서 처리해요. 처리 업체와 국외 이전 여부는 확정 후 이곳에 적어요.",
+        "음성 인식과 가사·음악 생성은 노래 생성 서버에서 처리해요. 가사와 노래를 만들 때 들린 단어만 외부 AI(Claude · ElevenLabs)로 보내고, 녹음 소리와 목소리 특징은 보내지 않아요. 국외 이전 여부는 확정 후 이곳에 적어요.",
     ),
     PolicySection(
         "얼마나 보관하나요",
         "4. 얼마나 보관하나요",
-        "녹음 원본은 노래를 만든 뒤 최대 24시간 안에 자동으로 지워요. 가족 이름과 목소리 특징, 완성곡은 이 차에만 저장되고 가족을 지우면 바로 함께 지워져요.",
+        "녹음 원본은 노래가 완성되면 바로 지워요. 가족 이름과 목소리 특징, 완성곡은 이 차에만 저장되고 가족을 지우면 바로 함께 지워져요.",
     ),
     PolicySection(
         "보호자의 권리",
         "5. 보호자의 권리",
         "설정에서 언제든 동의를 철회할 수 있고, 저장된 정보의 열람·삭제를 요청할 수 있어요. 만 14세 미만 아동의 정보는 보호자(법정대리인)의 동의를 받아요.",
     ),
-    // TODO(기획): 팀 연락처가 정해지면 넣는다
-    PolicySection(null, "6. 문의", "개인정보 보호책임자: [팀 연락처 기입 예정]"),
+    PolicySection(null, "6. 문의", "개인정보 보호책임자: $TEAM_CONTACT_EMAIL"),
 )
 
 /**
