@@ -1,4 +1,4 @@
-# 차량 리듬 동요 (가칭)
+# 차곡차곡
 
 주행 데이터와 아이 음성으로 동요를 만드는 Pleos Connect Kids 앱의 프론트엔드예요. 스택은 Kotlin + Jetpack Compose(AAOS)이고, 가사·노래 생성은 별도 AI 서버가 맡아요.
 
