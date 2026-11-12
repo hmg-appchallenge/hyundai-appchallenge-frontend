@@ -26,8 +26,8 @@ import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
-/** Primary는 주황, Secondary는 따뜻한 회색, Destructive는 삭제용 빨강, Dark는 진한 갈색 바탕이다. */
-enum class LargeButtonVariant { Primary, Secondary, Destructive, Dark }
+/** Primary는 주황, Secondary는 따뜻한 회색, Destructive는 삭제용 빨강, Dark는 진한 갈색, Filled는 진한 회색 바탕이다. */
+enum class LargeButtonVariant { Primary, Secondary, Destructive, Dark, Filled }
 
 private val ButtonShape = RoundedCornerShape(32.dp)
 private const val DISABLED_ALPHA = 0.4f
@@ -48,12 +48,14 @@ fun LargeButton(
         LargeButtonVariant.Secondary -> AppColors.TextWarmStrong
         LargeButtonVariant.Destructive -> AppColors.PopupWarmBackground
         LargeButtonVariant.Dark -> AppColors.PopupWarmBackground
+        LargeButtonVariant.Filled -> AppColors.BasicStaticLight100
     }
     val background = when (variant) {
         LargeButtonVariant.Primary -> AppColors.BrandOrange
         LargeButtonVariant.Secondary -> AppColors.ButtonWarmSecondary
         LargeButtonVariant.Destructive -> AppColors.InformativeNegative
         LargeButtonVariant.Dark -> AppColors.ReplayHint
+        LargeButtonVariant.Filled -> AppColors.ButtonFilledEnabled
     }
     Row(
         modifier = modifier

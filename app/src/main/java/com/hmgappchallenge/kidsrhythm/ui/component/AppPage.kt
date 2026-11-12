@@ -129,10 +129,21 @@ fun TabPage(
     onSelectTab: (AppTab) -> Unit,
     modifier: Modifier = Modifier,
     overlay: @Composable BoxScope.() -> Unit = {},
+    headerActions: @Composable RowScope.() -> Unit = {},
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppWindow(
-        header = { SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight()) },
+        header = {
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SegmentedTabs(selectedTab, onSelectTab, Modifier.fillMaxHeight())
+                Spacer(Modifier.weight(1f))
+                headerActions()
+            }
+        },
         modifier = modifier,
         overlay = overlay,
         content = content,

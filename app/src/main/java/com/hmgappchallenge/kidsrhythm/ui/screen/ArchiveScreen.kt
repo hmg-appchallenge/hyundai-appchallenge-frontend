@@ -1,6 +1,12 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.foundation.background
+import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +66,9 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
 
     TabPage(
         selectedTab = AppTab.Archive,
+        headerActions = {
+            if (songs.isEmpty()) Text("전체 노래 0곡", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
+        },
         onSelectTab = { if (it == AppTab.Make) onOpenMake() },
         overlay = {
             deleting?.let { song ->
@@ -82,15 +91,7 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
         },
     ) {
         if (songs.isEmpty()) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(32.dp, Alignment.CenterVertically),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Text("아직 만든 노래가 없어요", style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
-                Text("차가 달리는 리듬으로 첫 노래를 만들어 볼까요?", style = AppTypography.TitleMediumNormal, color = AppColors.TextDarkTertiary)
-                LargeButton(text = "노래 만들기", onClick = onOpenMake, icon = R.drawable.ic_play, modifier = Modifier.width(480.dp))
-            }
+            EmptyArchive(onOpenMake)
             return@TabPage
         }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)) {
@@ -142,5 +143,34 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
                     .fillMaxWidth(),
             )
         }
+    }
+}
+
+/** S07-0 빈 보관함. 가운데에 음표와 안내, 노래 만들러 가기 버튼. */
+@Composable
+private fun EmptyArchive(onOpenMake: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(200.dp)
+                .clip(CircleShape)
+                .background(AppColors.EmptyArchiveCircle),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(painterResource(R.drawable.ic_music), contentDescription = null, tint = AppColors.EmptyArchiveIcon, modifier = Modifier.size(96.dp))
+        }
+        Text("아직 만든 노래가 없어요", style = AppTypography.HeadlineSmall, color = AppColors.TextDarkPrimary)
+        Text("차를 타고 가면서 가족과 첫 노래를 만들어볼까요?", style = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.Normal), color = AppColors.TextDarkSecondary)
+        LargeButton(
+            text = "노래 만들러 가기",
+            onClick = onOpenMake,
+            icon = R.drawable.ic_play,
+            variant = LargeButtonVariant.Filled,
+            modifier = Modifier.width(508.dp),
+        )
     }
 }
