@@ -25,4 +25,9 @@ class SpeedBandTest {
         assertEquals(110, bpmForSpeed(42f))
         assertEquals("시내 · 8비트", speedZoneLabel(42f))
     }
+
+    @Test
+    fun `완성곡 BPM으로 구간을 찾는다`() {
+        assertEquals(listOf(SpeedZone.STOP, SpeedZone.ALLEY, SpeedZone.CITY, SpeedZone.HIGHWAY), listOf(80, 95, 110, 125).map(::speedZoneForBpm))
+    }
 }

@@ -20,3 +20,11 @@ fun speedZoneFor(speedKmh: Float): SpeedZone = when {
 
 /** 속도 구간 칩 글자. 예: "시내 · 8비트" */
 fun speedZoneLabel(speedKmh: Float): String = speedZoneFor(speedKmh).let { "${it.label} · ${it.beats}비트" }
+
+/** 완성곡 BPM(80 · 95 · 110 · 125)이 어느 구간인지. 사이 값은 가까운 구간으로 본다. */
+fun speedZoneForBpm(bpm: Int): SpeedZone = when {
+    bpm < 88 -> SpeedZone.STOP
+    bpm < 103 -> SpeedZone.ALLEY
+    bpm < 118 -> SpeedZone.CITY
+    else -> SpeedZone.HIGHWAY
+}
