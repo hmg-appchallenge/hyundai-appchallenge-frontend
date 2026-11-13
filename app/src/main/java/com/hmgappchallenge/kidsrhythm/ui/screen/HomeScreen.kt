@@ -1,6 +1,19 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.foundation.layout.Arrangement
+import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +54,9 @@ import kotlinx.coroutines.delay
 
 private const val CONSENT_NOTICE_MILLIS = 3_000L
 
+private val OfflineBannerShape = RoundedCornerShape(24.dp)
+private val OfflineRetryShape = RoundedCornerShape(16.dp)
+
 /** 홈에 보여 줄 최근 곡 한 줄. */
 data class RecentSong(val title: String, val meta: String)
 
@@ -62,6 +78,11 @@ fun HomeScreen(
     onOpenPrivacy: () -> Unit = {},
     consentNoticeCount: Int = 0,
     onTapConsentNotice: () -> Unit = {},
+    isOffline: Boolean = false,
+    onRetryConnection: () -> Unit = {},
+    micBlocked: Boolean = false,
+    onDismissMicBlocked: () -> Unit = {},
+    onOpenMicSettings: () -> Unit = {},
 ) {
     // 동의 없이 시작을 누를 때마다 안내를 새로 띄우고 잠시 뒤 숨긴다
     // 홈에 다시 들어왔을 때 지난 안내를 또 띄우지 않도록, 띄운 횟수를 기억한다
@@ -119,6 +140,9 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.weight(1f))
             }
+            if (isOffline) {
+                OfflineBanner(onRetry = onRetryConnection, modifier = Modifier.padding(bottom = 20.dp).fillMaxWidth())
+            }
             LargeButton(
                 text = "노래 만들기 시작",
                 onClick = onStart,
@@ -148,6 +172,17 @@ fun HomeScreen(
         overlay = {
             if (isConsentVisible) {
                 ConsentDialog(onAgree = onAgreeConsent, onDismiss = onDismissConsent, onOpenPrivacy = onOpenPrivacy)
+            } else if (micBlocked) {
+                WarmConfirmPopup(
+                    title = "마이크를 쓸 수 없어요",
+                    message = "노래를 만들려면 마이크 권한이 필요해요.\n차량 설정 › 앱 › 권한에서 마이크 권한을 허용해 주세요.",
+                    cancelText = "취소",
+                    onCancel = onDismissMicBlocked,
+                    confirmText = "설정 열기",
+                    onConfirm = onOpenMicSettings,
+                    confirmIcon = R.drawable.ic_settings,
+                    confirmVariant = LargeButtonVariant.Primary,
+                )
             } else if (isNoticeVisible) {
                 NoticeSnackbar(
                     icon = R.drawable.ic_shield,
@@ -179,4 +214,36 @@ private fun HomeScreenPreview() {
         onAgreeConsent = {},
         onDismissConsent = {},
     )
+}
+
+/** 인터넷이 끊겼을 때 노래 만들기 버튼 위에 보이는 안내. 보관함은 그대로 들을 수 있다. */
+@Composable
+private fun OfflineBanner(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .height(104.dp)
+            .clip(OfflineBannerShape)
+            .background(AppColors.OfflineBannerBackground)
+            .border(2.dp, AppColors.InformativeNegative, OfflineBannerShape)
+            .padding(start = 24.dp, end = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(20.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_wifi_off), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(40.dp))
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text("인터넷 연결이 끊겼어요", style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
+            Text("연결되면 다시 만들 수 있어요 · 보관함은 들을 수 있어요", style = AppTypography.LabelSmall, color = AppColors.TextWarmBody, maxLines = 1)
+        }
+        Box(
+            modifier = Modifier
+                .height(68.dp)
+                .clip(OfflineRetryShape)
+                .background(AppColors.PopupWarmBackground)
+                .clickable(role = Role.Button, onClick = onRetry)
+                .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text("다시 연결", style = AppTypography.BodySmallStrong, color = AppColors.TextDarkPrimary)
+        }
+    }
 }

@@ -7,6 +7,7 @@
 
     <!-- 노래 생성 서버(docs/API.md)와 통신 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- 가족 목소리 녹음 (S02 목소리 등록, S04 녹음) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- 주행 속도 → 베이스 비트, 바깥 온도 → 계절 악기 (AAOS Car API) -->
