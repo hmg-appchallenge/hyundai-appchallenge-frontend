@@ -207,11 +207,16 @@ private fun BoxScope.QuitConfirm(onQuit: () -> Unit, onContinue: () -> Unit) {
 private const val POLL_MILLIS = 1_000L
 private const val MAX_POLL_FAILURES = 30
 
+/**
+ * 서버가 FAILED로 보내는 다섯 가지 이유. 녹음은 서버가 끝나는 즉시 지워서 같은 녹음으로 다시 만들 수 없고,
+ * "다시 녹음하기"로 새로 녹음한다. 외부 AI가 실패하면 서버가 자체 엔진으로 만들어 DONE으로 온다.
+ */
 private fun errorText(e: SongError): String = when (e.code) {
     "NO_SPEECH" -> "목소리가 들리지 않았어요. 마이크 가까이에서 다시 불러 볼까요?"
     "TOO_SHORT" -> "녹음이 너무 짧아요. 조금 더 길게 불러 주세요."
-    "TIMEOUT" -> "노래를 만드는 데 시간이 너무 오래 걸렸어요. 다시 시도해 주세요."
-    else -> e.message.ifEmpty { "잠시 후 다시 시도해 주세요." }
+    "BAD_AUDIO" -> "녹음 소리가 잘 들리지 않았어요. 조용할 때 다시 불러 주세요."
+    "TIMEOUT" -> "노래를 만드는 데 시간이 너무 오래 걸렸어요. 다시 녹음해 주세요."
+    else -> "노래를 만들지 못했어요. 다시 녹음해 주세요."
 }
 
 @Composable
