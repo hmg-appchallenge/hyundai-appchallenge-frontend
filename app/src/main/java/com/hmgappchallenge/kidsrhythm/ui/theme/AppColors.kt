@@ -152,7 +152,7 @@ object AppColors {
     val ReplayLyricNext = Color(0xCC181310)
     val SettingsGroupBackground = AppPalette.WarmGray100
     val SettingsDivider = AppPalette.WarmGray300
-    val SettingsActionBackground = Color(0x0D131417)
+    val SettingsActionText = AppPalette.WarmWhite100
     val SwitchOn = Color(0xFF02C265)
     val RadioOffBorder = Color(0x4D131417)
     val ParticleOrange = AppPalette.Orange500

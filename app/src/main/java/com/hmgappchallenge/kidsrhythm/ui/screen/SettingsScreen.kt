@@ -3,6 +3,8 @@ package com.hmgappchallenge.kidsrhythm.ui.screen
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -151,7 +153,8 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
         },
     ) {
         Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(32.dp)) {
+            // 화면보다 길어지면 열마다 넘겨 본다 (오른쪽 열이 앱 정보까지 들어가면 넘친다)
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(32.dp)) {
                 SettingsGroup("가족 · 친구") {
                     SettingsRow("목소리 설정", "가족 추가 · 이름 · 목소리 · 악기", value = "${state.familyCount}명", onClick = actions.onOpenVoiceSettings)
                     SettingsDivider()
@@ -178,7 +181,7 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                     )
                 }
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(32.dp)) {
+            Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(32.dp)) {
                 SettingsGroup("개인정보") {
                     SettingsActionRow(
                         "보호자 동의",
@@ -199,7 +202,7 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                 SettingsGroup("권한") {
                     SettingsRow(
                         "마이크",
-                        if (state.micGranted) "노래 녹음 · 목소리 등록에 필요해요" else "켜야 노래 녹음과 목소리 등록을 할 수 있어요",
+                        if (state.micGranted) "노래 녹음 · 목소리 등록에 필요해요" else "접근을 허용해야 녹음과 목소리 등록이 가능해요.",
                         value = if (state.micGranted) "허용됨" else "허용 안 함",
                         valueColor = if (state.micGranted) AppColors.SwitchOn else AppColors.InformativeNegative,
                         onClick = actions.onMicClick,
@@ -214,7 +217,10 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                     )
                 }
                 SettingsGroup("앱 정보") {
-                    SettingsRow("버전 0.1 (공모전 데모)", "문의 · $TEAM_CONTACT_EMAIL", onClick = null)
+                    SettingsRow("버전", null, value = "0.1 (공모전 데모)", onClick = null)
+                    SettingsDivider()
+                    // 차량에는 메일 앱이 없어 누를 곳은 없고, 시안처럼 화살표만 둔다
+                    SettingsRow("문의하기", TEAM_CONTACT_EMAIL, onClick = null, showChevron = true)
                 }
             }
         }
@@ -273,10 +279,11 @@ private fun SettingsRow(
     value: String? = null,
     valueColor: Color = AppColors.TextDarkPrimary,
     onClick: (() -> Unit)?,
+    showChevron: Boolean = onClick != null,
 ) {
     SettingsRowFrame(title, subtitle, onClick) {
         if (value != null) Text(value, style = AppTypography.BodySmallStrong, color = valueColor)
-        if (onClick != null) {
+        if (showChevron) {
             Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = AppColors.SongMeta, modifier = Modifier.size(40.dp))
         }
     }
@@ -289,7 +296,7 @@ private fun SettingsToggleRow(title: String, subtitle: String, checked: Boolean,
     }
 }
 
-/** 오른쪽에 동작 버튼(철회·삭제, 연한 바탕에 빨간 글자)이 있는 줄. [actionText]가 없으면 버튼을 숨긴다. */
+/** 오른쪽에 빨간 동작 버튼(철회·삭제)이 있는 줄. [actionText]가 없으면 버튼을 숨긴다. */
 @Composable
 private fun SettingsActionRow(title: String, subtitle: String, actionText: String?, onAction: () -> Unit) {
     SettingsRowFrame(title, subtitle, onClick = null) {
@@ -298,12 +305,12 @@ private fun SettingsActionRow(title: String, subtitle: String, actionText: Strin
                 modifier = Modifier
                     .height(72.dp)
                     .clip(ActionShape)
-                    .background(AppColors.SettingsActionBackground)
+                    .background(AppColors.InformativeNegative)
                     .clickable(role = Role.Button, onClick = onAction)
                     .padding(horizontal = 28.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(actionText, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative)
+                Text(actionText, style = AppTypography.BodySmallStrong, color = AppColors.SettingsActionText)
             }
         }
     }
