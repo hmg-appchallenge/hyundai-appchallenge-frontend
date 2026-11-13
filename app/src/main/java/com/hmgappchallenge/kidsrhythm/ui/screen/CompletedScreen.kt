@@ -72,6 +72,9 @@ import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotPose
 import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
+import com.hmgappchallenge.kidsrhythm.ui.component.FireworkCelebration
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.foundation.layout.requiredSize
 import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.component.dropShadow
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
@@ -117,6 +120,8 @@ private val PlayerShape = RoundedCornerShape(32.dp)
 private val PLAYER_BORDER = 2.dp
 
 private const val SAVE_ERROR_MILLIS = 3_000L
+
+private val FireworkSize = DpSize(800.dp, 600.dp)
 
 private val StageHeight = 598.dp
 private val FloorTop = 480.dp
@@ -172,6 +177,8 @@ fun CompletedRoute(
     val player = services.player
     val scope = rememberCoroutineScope()
     var saving by remember { mutableStateOf(false) }
+    // 이 곡을 처음 열었을 때만 폭죽을 한 번 터뜨린다 (친구를 바꾸고 돌아와도 다시 터지지 않게)
+    var celebrating by rememberSaveable(received.songId) { mutableStateOf(true) }
     // 저장하지 못했을 때 잠깐 띄우는 안내. 바뀔 때마다 새로 띄우고 잠시 뒤 지운다
     var saveError by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(saveError) {
@@ -221,6 +228,8 @@ fun CompletedRoute(
         onTitleChange = { editedTitle = it },
         startEnlarged = startEnlarged,
         notice = saveError,
+        celebrating = celebrating,
+        onCelebrationEnd = { celebrating = false },
     )
 }
 
@@ -242,6 +251,8 @@ fun CompletedScreen(
     onTitleChange: (String) -> Unit = {},
     startEnlarged: Boolean = false,
     notice: String? = null,
+    celebrating: Boolean = false,
+    onCelebrationEnd: () -> Unit = {},
 ) {
     // 처음 화면은 설정(S08 기본 보기 · 정차하면 크게 보기)을 따르고, 크게 보기·작게 보기로 오간다
     var enlarged by rememberSaveable { mutableStateOf(startEnlarged) }
@@ -260,6 +271,8 @@ fun CompletedScreen(
             onMakeAnother = onMakeAnother,
             onTitleChange = onTitleChange,
             notice = notice,
+            celebrating = celebrating,
+            onCelebrationEnd = onCelebrationEnd,
         )
         return
     }
@@ -293,6 +306,9 @@ fun CompletedScreen(
                 top = CharacterTop,
                 height = CharacterHeight,
             )
+            if (celebrating) {
+                FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).size(FireworkSize))
+            }
             StageViewButton(
                 text = "작게 보기",
                 icon = R.drawable.ic_shrink,
@@ -360,6 +376,8 @@ private fun BasicView(
     onMakeAnother: () -> Unit,
     onTitleChange: (String) -> Unit,
     notice: String?,
+    celebrating: Boolean,
+    onCelebrationEnd: () -> Unit,
 ) {
     var editingTitle by rememberSaveable { mutableStateOf(false) }
     SubPage(
@@ -399,6 +417,14 @@ private fun BasicView(
                     top = BasicCharacterTop,
                     height = BasicCharacterHeight,
                 )
+                if (celebrating) {
+                    FireworkCelebration(
+                        onEnd = onCelebrationEnd,
+                        modifier = Modifier
+                            .offset(x = (-33).dp, y = 162.dp)
+                            .requiredSize(FireworkSize),
+                    )
+                }
                 SpeechBubble(
                     text = "노래가 완성되었어!",
                     modifier = Modifier
