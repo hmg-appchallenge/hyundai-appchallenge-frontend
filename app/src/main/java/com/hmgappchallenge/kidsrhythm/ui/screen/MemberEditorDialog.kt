@@ -1,6 +1,7 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import android.Manifest
+import androidx.annotation.DrawableRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.LinearEasing
@@ -128,7 +129,7 @@ fun BoxScope.MemberEditorDialog(
         mutableStateOf(if (mode is MemberEditorMode.Edit) MemberDraft.from(mode.member) else MemberDraft())
     }
     var checking by remember { mutableStateOf(false) }
-    var voiceError by remember { mutableStateOf<String?>(null) }
+    var voiceError by remember { mutableStateOf<VoiceError?>(null) }
     var uploadPending by remember { mutableStateOf(false) }
     // 정해진 시간 동안 마이크로 녹음하고, 시간이 다 되면 서버에서 목소리 특징을 받는다.
     // 녹음이 끝나는 순간 이 효과는 키(recording)가 바뀌어 취소되므로, 서버로 보내기는 새로 시작되는 효과(recording=false)에서 한다
@@ -173,7 +174,7 @@ fun BoxScope.MemberEditorDialog(
             voiceError = null
             draft = draft.startRecording()
         } else if (!granted) {
-            voiceError = "목소리를 녹음하려면 마이크 권한이 필요해요"
+            voiceError = VoiceError("마이크를 쓸 수 없어요", "목소리를 녹음하려면 마이크 권한이 필요해요")
         }
     }
     val startRecording: () -> Unit = {
@@ -184,7 +185,7 @@ fun BoxScope.MemberEditorDialog(
                 voiceError = null
                 draft = draft.startRecording()
             }
-            else -> voiceError = "마이크를 열 수 없어요"
+            else -> voiceError = VoiceError("마이크를 쓸 수 없어요", "마이크를 열 수 없어요. 잠시 뒤 다시 녹음해 주세요")
         }
     }
     var confirmingDelete by remember(mode) { mutableStateOf(false) }
@@ -399,12 +400,14 @@ private fun NameField(name: String, enabled: Boolean, onNameChange: (String) -> 
     )
 }
 
-private fun voiceErrorText(quality: String?): String = when (quality) {
-    "too_short" -> "목소리가 짧게 들렸어요. 문장을 두 번 따라 말해 주세요."
-    "too_quiet" -> "목소리가 작게 들렸어요. 조금 더 크게 말해 주세요."
-    "noisy" -> "주변 소리가 커요. 조용할 때 다시 녹음해 주세요."
-    null -> "노래 서버에 연결할 수 없어요. 서버를 켠 뒤 다시 녹음해 주세요."
-    else -> "목소리를 등록하지 못했어요. 다시 녹음해 주세요."
+/** 목소리 등록이 안 됐을 때 보여 줄 제목과 설명. */
+private data class VoiceError(val title: String, val message: String)
+
+private fun voiceErrorText(quality: String?): VoiceError = when (quality) {
+    // 소리 문제(짧음·작음·잡음)는 시안대로 한 문구로 안내한다
+    "too_short", "too_quiet", "noisy" -> VoiceError("목소리를 잘 못 들었어요", "조금 더 크게, 조용할 때 말해 주세요")
+    null -> VoiceError("목소리를 확인하지 못했어요", "인터넷 연결을 확인하고 다시 녹음해 주세요")
+    else -> VoiceError("목소리를 등록하지 못했어요", "잠시 뒤 다시 녹음해 주세요")
 }
 
 /** 이름칸 테두리: 주행 중 잠금은 회색, 입력 중은 주황, 쉬는 상태는 옅은 테두리. */
@@ -415,7 +418,7 @@ private fun fieldBorderColor(enabled: Boolean, active: Boolean) = when {
 }
 
 @Composable
-private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: String?, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
+private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: VoiceError?, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -431,9 +434,14 @@ private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: String?, o
             return@Column
         }
         when (voice) {
-            VoiceStatus.None -> {
+            VoiceStatus.None -> if (error != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(error.title, style = AppTypography.TitleMedium, color = AppColors.InformativeNegative, textAlign = TextAlign.Center)
+                    Text(error.message, style = AppTypography.BodyMedium, color = AppColors.TextWarm, textAlign = TextAlign.Center)
+                }
+                PromptChip(text = "목소리 녹음 다시 하기", icon = R.drawable.ic_replay, onClick = onStartRecording)
+            } else {
                 PromptSentence("“안녕, 우리 같이 노래하자!”")
-                if (error != null) Text(error, style = AppTypography.BodySmallStrong, color = AppColors.InformativeNegative, textAlign = TextAlign.Center)
                 PromptChip(text = "목소리 녹음 시작하기", onClick = onStartRecording)
             }
             is VoiceStatus.Recording -> {
@@ -457,7 +465,7 @@ private fun PromptSentence(text: String) {
 }
 
 @Composable
-private fun PromptChip(text: String, onClick: () -> Unit) {
+private fun PromptChip(text: String, onClick: () -> Unit, @DrawableRes icon: Int = R.drawable.ic_mic) {
     Row(
         modifier = Modifier
             .height(71.7.dp)
@@ -468,7 +476,7 @@ private fun PromptChip(text: String, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(painterResource(R.drawable.ic_mic), contentDescription = null, tint = AppColors.IconDarkPrimary, modifier = Modifier.size(38.dp))
+        Icon(painterResource(icon), contentDescription = null, tint = AppColors.IconDarkPrimary, modifier = Modifier.size(38.dp))
         Text(text, style = PromptChipTextStyle, color = AppColors.TextWarm)
     }
 }
