@@ -166,9 +166,10 @@ fun ReplayRoute(
     }
 }
 
-/** 주행 중: 친구 없이 제목·가족·가사 전체·재생 막대. */
+/** 주행 중: 친구 없이 제목·가족·가사 전체·재생 막대. 가사 접기를 누르면 가사를 숨긴다. */
 @Composable
 private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, onNext: () -> Unit, onOtherSongs: () -> Unit, onDelete: () -> Unit) {
+    var lyricsFolded by rememberSaveable { mutableStateOf(false) }
     val created = Instant.ofEpochMilli(song.createdAtMillis).atZone(ZoneId.systemDefault()).toLocalDate()
     val lines = song.lyricLines
     Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(32.dp)) {
@@ -185,16 +186,20 @@ private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, on
                 song.members.forEach { MemberChip(it) }
             }
         }
-        SongLyricsList(
-            lines = lines.map { it.text },
-            current = currentLyricIndex(lines, player.positionMs).coerceAtLeast(0),
-            sections = lines.map { it.section },
-            activeText = { lyricText(lines[it]) },
-            onLineClick = { player.seekTo(lines[it].startMs) },
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-        )
+        if (lyricsFolded) {
+            Spacer(Modifier.weight(1f))
+        } else {
+            SongLyricsList(
+                lines = lines.map { it.text },
+                current = currentLyricIndex(lines, player.positionMs).coerceAtLeast(0),
+                sections = lines.map { it.section },
+                activeText = { lyricText(lines[it]) },
+                onLineClick = { player.seekTo(lines[it].startMs) },
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+        }
         SongProgressPlayer(
             isPlaying = player.isPlaying,
             positionMillis = player.positionMs,
@@ -205,7 +210,23 @@ private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, on
             modifier = Modifier.fillMaxWidth(),
         )
     }
-    ReplayActions(onOtherSongs, onDelete, modifier = Modifier.padding(top = 31.dp))
+    Row(modifier = Modifier.padding(top = 31.dp), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+        LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.weight(1f))
+        LargeButton(
+            text = if (lyricsFolded) "가사 보기" else "가사 접기",
+            onClick = { lyricsFolded = !lyricsFolded },
+            icon = if (lyricsFolded) R.drawable.ic_expand else R.drawable.ic_shrink,
+            variant = LargeButtonVariant.Outlined,
+            modifier = Modifier.weight(1f),
+        )
+        LargeButton(
+            text = "지우기",
+            onClick = onDelete,
+            icon = R.drawable.ic_trash,
+            variant = LargeButtonVariant.Secondary,
+            modifier = Modifier.widthIn(min = 242.dp),
+        )
+    }
 }
 
 /**

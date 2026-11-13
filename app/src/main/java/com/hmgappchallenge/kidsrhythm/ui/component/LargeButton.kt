@@ -2,6 +2,7 @@ package com.hmgappchallenge.kidsrhythm.ui.component
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,8 +27,11 @@ import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 
-/** Primary는 주황, Secondary는 따뜻한 회색, Destructive는 삭제용 빨강, Dark는 진한 갈색, Filled는 진한 회색 바탕이다. */
-enum class LargeButtonVariant { Primary, Secondary, Destructive, Dark, Filled }
+/**
+ * Primary는 주황, Secondary는 따뜻한 회색, Destructive는 삭제용 빨강, Dark는 진한 갈색, Filled는 진한 회색 바탕이다.
+ * Outlined는 흰 바탕에 옅은 테두리와 주황 글자다.
+ */
+enum class LargeButtonVariant { Primary, Secondary, Destructive, Dark, Filled, Outlined }
 
 private val ButtonShape = RoundedCornerShape(32.dp)
 private const val DISABLED_ALPHA = 0.4f
@@ -49,6 +53,7 @@ fun LargeButton(
         LargeButtonVariant.Destructive -> AppColors.PopupWarmBackground
         LargeButtonVariant.Dark -> AppColors.PopupWarmBackground
         LargeButtonVariant.Filled -> AppColors.BasicStaticLight100
+        LargeButtonVariant.Outlined -> AppColors.BrandOrange
     }
     val background = when (variant) {
         LargeButtonVariant.Primary -> AppColors.BrandOrange
@@ -56,6 +61,7 @@ fun LargeButton(
         LargeButtonVariant.Destructive -> AppColors.InformativeNegative
         LargeButtonVariant.Dark -> AppColors.ReplayHint
         LargeButtonVariant.Filled -> AppColors.ButtonFilledEnabled
+        LargeButtonVariant.Outlined -> AppColors.PopupWarmBackground
     }
     Row(
         modifier = modifier
@@ -63,6 +69,7 @@ fun LargeButton(
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .clip(ButtonShape)
             .background(background)
+            .then(if (variant == LargeButtonVariant.Outlined) Modifier.border(2.dp, AppColors.PopupWarmBorder, ButtonShape) else Modifier)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(horizontal = 40.dp, vertical = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
