@@ -18,6 +18,13 @@ import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.archive.songMetaLabel
 import com.hmgappchallenge.kidsrhythm.audio.VoiceEnrollment
 import com.hmgappchallenge.kidsrhythm.consent.ConsentGate
+import com.hmgappchallenge.kidsrhythm.recording.openAppDetails
+import com.hmgappchallenge.kidsrhythm.recording.hasMicPermission
+import com.hmgappchallenge.kidsrhythm.network.rememberConnectivityState
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.Manifest
 import com.hmgappchallenge.kidsrhythm.recording.rememberMicPermissionState
 import com.hmgappchallenge.kidsrhythm.consent.ConsentStore
 import com.hmgappchallenge.kidsrhythm.family.VoiceStatus
@@ -109,11 +116,22 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 services.beatPlayer.stop()
                 services.player.pause()
             }
+            val connectivity = rememberConnectivityState()
+            val context = LocalContext.current
+            // 마이크 권한이 없으면 시스템 권한 창을 먼저 띄우고, 거절되면 S01 "마이크를 쓸 수 없어요"를 보여 준다
+            var micBlocked by remember { mutableStateOf(false) }
+            val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+                if (granted) navController.navigate(Route.INTRO) else micBlocked = true
+            }
             HomeScreen(
                 character = character,
                 recentSong = latest?.let { RecentSong(it.title, songMetaLabel(it, System.currentTimeMillis())) },
                 isConsentVisible = consentGate.isDialogVisible,
-                onStart = { if (consentGate.requestStart()) navController.navigate(Route.INTRO) },
+                onStart = {
+                    if (consentGate.requestStart()) {
+                        if (context.hasMicPermission()) navController.navigate(Route.INTRO) else micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
                 onOpenVoiceSettings = { navController.navigate(Route.VOICE_SETTINGS) },
                 onOpenCharacterPicker = { navController.navigate(Route.CHARACTER_PICKER) },
@@ -128,6 +146,14 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 onOpenPrivacy = { navController.navigate(Route.privacy(fromSettings = false)) },
                 consentNoticeCount = consentGate.noticeCount,
                 onTapConsentNotice = consentGate::openDialog,
+                isOffline = !connectivity.online,
+                onRetryConnection = connectivity::recheck,
+                micBlocked = micBlocked,
+                onDismissMicBlocked = { micBlocked = false },
+                onOpenMicSettings = {
+                    micBlocked = false
+                    context.openAppDetails()
+                },
             )
         }
         composable(Route.INTRO) {

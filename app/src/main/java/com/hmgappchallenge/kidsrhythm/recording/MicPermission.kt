@@ -65,10 +65,12 @@ fun rememberMicPermissionState(): MicPermissionState {
     return state
 }
 
-private fun Context.hasMicPermission(): Boolean =
+/** 마이크 권한이 있으면 true. */
+fun Context.hasMicPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
 
-private fun Context.openAppDetails() {
+/** 이 앱의 정보(권한) 화면을 연다. 차량에 그 화면이 없으면 아무것도 하지 않는다. */
+fun Context.openAppDetails() {
     val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     // 차량에 따라 앱 정보 화면이 없을 수 있어, 없으면 아무것도 하지 않는다

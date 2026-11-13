@@ -88,6 +88,9 @@ object AppColors {
     val SnackbarBackground = AppPalette.WarmGray900
     val SnackbarContent = AppPalette.WarmWhite100
 
+    // 인터넷 끊김 안내 (S01-2)
+    val OfflineBannerBackground = Color(0x0FFE3D16)
+
     // 목소리 카드 (연주 중 / 대기)
     val VoiceCardName = AppPalette.WarmBlack1000
     val VoiceCardInstrument = AppPalette.WarmBlack500
