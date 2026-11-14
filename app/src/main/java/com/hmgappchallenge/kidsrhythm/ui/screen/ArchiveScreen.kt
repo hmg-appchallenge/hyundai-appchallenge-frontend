@@ -322,7 +322,7 @@ private fun DeleteBar(count: Int, onDelete: () -> Unit) {
             modifier = Modifier.weight(1f).padding(start = 40.dp),
         )
         LargeButton(
-            text = if (count > 0) "${count}곡 지우기" else "지우기",
+            text = "선택 노래 지우기",
             onClick = onDelete,
             icon = R.drawable.ic_trash,
             enabled = count > 0,
