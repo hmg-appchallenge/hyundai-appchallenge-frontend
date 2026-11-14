@@ -4,12 +4,6 @@ import android.Manifest
 import androidx.annotation.DrawableRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -81,7 +75,6 @@ import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlin.math.ceil
-import kotlin.math.floor
 
 /** 팝업을 연 목적. 수정이면 고칠 가족을 들고 있다. */
 sealed interface MemberEditorMode {
@@ -107,9 +100,8 @@ private val DeleteConfirmTop = 402.dp
 private val PromptChipTextStyle = AppTypography.TitleSmall.copy(fontSize = 31.37.sp, lineHeight = 40.33.sp)
 private val ListeningChipTextStyle = AppTypography.LabelSmall.copy(fontSize = 20.92.sp, lineHeight = 26.9.sp, fontWeight = FontWeight.Bold)
 
-/** 녹음 중 파형 막대 높이 (앞 10개 뒤로 6개 패턴 반복). */
-private val ListeningBarHeights = listOf(11, 21, 31, 17, 37, 25, 13, 32, 21, 11) + listOf(27, 35, 19, 13, 23, 9)
-private const val LISTENING_PATTERN_START = 10
+/** 아직 소리가 쌓이지 않은 자리의 막대 높이 (조용할 때와 같다). */
+private const val QUIET_BAR_HEIGHT = 8
 
 /**
  * S02-2 새 가족 추가 · S02-3 가족 수정 팝업. 두 경우 모두 제목은 "새 멤버 추가"다 (디자인 확인).
@@ -215,6 +207,7 @@ fun BoxScope.MemberEditorDialog(
                 error = voiceError,
                 onStartRecording = startRecording,
                 modifier = Modifier.padding(top = 28.dp),
+                levelHeights = enrollment?.levelHeights.orEmpty(),
             )
             InstrumentPicker(
                 selected = draft.instrument,
@@ -419,7 +412,14 @@ private fun fieldBorderColor(enabled: Boolean, active: Boolean) = when {
 }
 
 @Composable
-private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: VoiceError?, onStartRecording: () -> Unit, modifier: Modifier = Modifier) {
+private fun VoicePrompt(
+    voice: VoiceStatus,
+    checking: Boolean,
+    error: VoiceError?,
+    onStartRecording: () -> Unit,
+    modifier: Modifier = Modifier,
+    levelHeights: List<Int> = emptyList(),
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -448,7 +448,7 @@ private fun VoicePrompt(voice: VoiceStatus, checking: Boolean, error: VoiceError
             is VoiceStatus.Recording -> {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     PromptSentence("“안녕, 우리 같이 노래하자!”")
-                    ListeningWaveform()
+                    ListeningWaveform(levelHeights)
                 }
                 ListeningChip(remainingSeconds = ceil(voice.remainingMillis / 1_000.0).toInt())
             }
@@ -502,15 +502,9 @@ private fun ListeningChip(remainingSeconds: Int) {
     }
 }
 
-/** 듣는 중 파형. 막대가 왼쪽으로 계속 흘러간다. */
+/** 듣는 중 파형. 0.1초마다 지금 목소리 크기 막대가 오른쪽에 붙고, 앞의 막대는 왼쪽으로 밀려난다. */
 @Composable
-private fun ListeningWaveform() {
-    val scrolled by rememberInfiniteTransition(label = "listening").animateFloat(
-        initialValue = 0f,
-        targetValue = 1_000f,
-        animationSpec = infiniteRepeatable(tween(100_000, easing = LinearEasing), RepeatMode.Restart),
-        label = "listeningBars",
-    )
+private fun ListeningWaveform(levelHeights: List<Int>) {
     Canvas(
         modifier = Modifier
             .width(603.dp)
@@ -520,25 +514,21 @@ private fun ListeningWaveform() {
         val barWidth = 7.dp.toPx()
         val pitch = barWidth + 6.dp.toPx()
         val radius = CornerRadius(3.6.dp.toPx())
-        val first = floor(scrolled).toInt()
-        val shift = (scrolled - first) * pitch
-        val count = (size.width / pitch).toInt() + 2
+        val count = ((size.width + 6.dp.toPx()) / pitch).toInt()
+        val recent = levelHeights.takeLast(count)
+        val right = size.width - barWidth
         repeat(count) { slot ->
-            val h = barHeightAt(first + slot).dp.toPx()
+            // 오른쪽 끝이 가장 최근 소리다
+            val fromRight = count - 1 - slot
+            val h = (recent.getOrNull(recent.size - 1 - fromRight) ?: QUIET_BAR_HEIGHT).dp.toPx()
             drawRoundRect(
                 color = AppColors.BrandOrange,
-                topLeft = Offset(slot * pitch - shift, size.height / 2 - h / 2),
+                topLeft = Offset(right - fromRight * pitch, size.height / 2 - h / 2),
                 size = Size(barWidth, h),
                 cornerRadius = radius,
             )
         }
     }
-}
-
-private fun barHeightAt(index: Int): Int {
-    if (index < LISTENING_PATTERN_START) return ListeningBarHeights[index]
-    val pattern = ListeningBarHeights.size - LISTENING_PATTERN_START
-    return ListeningBarHeights[LISTENING_PATTERN_START + (index - LISTENING_PATTERN_START) % pattern]
 }
 
 @Composable
