@@ -95,6 +95,13 @@ adb shell "echo 42 | run-as com.hmgappchallenge.kidsrhythm --user 10 sh -c 'cat 
 adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 rm files/debug_speed.txt
 ```
 
+- 주행 중 화면(다시 듣기에 가사만, 이름 입력 잠금 등)은 차의 "주행 중 화면 제한" 신호로 정해져요. 이 에뮬레이터는 adb로 그 신호를 바꿀 수 없어서, 디버그 빌드 앱 내부 폴더에 `debug_driving.txt`를 넣어요. `1`이면 주행 중, `0`이면 정차예요. 1초마다 읽고, 파일을 지우면 다시 차량 값을 써요.
+
+```bash
+adb shell "echo 1 | run-as com.hmgappchallenge.kidsrhythm --user 10 sh -c 'cat > files/debug_driving.txt'"
+adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 rm files/debug_driving.txt
+```
+
 ## 노래는 어디에 저장되나요
 
 | 어디 | 남는 것 |
