@@ -41,21 +41,25 @@ enum class SongTone(val background: Color, val icon: Color) {
 /** 목록 [index]번째 곡의 썸네일 색. */
 fun songTone(index: Int): SongTone = SongTone.entries[index.mod(SongTone.entries.size)]
 
-/** 곡 한 줄 (음표 썸네일 · 제목 · 부가 정보 · 재생 버튼). */
+/**
+ * 곡 한 줄 (음표 썸네일 · 제목 · 부가 정보 · 재생 버튼). [onPlay]가 없으면 재생 버튼을 숨기고,
+ * [selected]면 지울 곡으로 고른 표시(주황 테두리)를 한다.
+ */
 @Composable
 fun SongRow(
     title: String,
     meta: String,
-    onPlay: () -> Unit,
+    onPlay: (() -> Unit)?,
     modifier: Modifier = Modifier,
     tone: SongTone = SongTone.Yellow,
+    selected: Boolean = false,
 ) {
     Row(
         modifier = modifier
             .height(120.dp)
             .clip(RowShape)
-            .background(AppColors.SurfaceBasic)
-            .border(BORDER_WIDTH, AppColors.SpeedChipBackground, RowShape)
+            .background(if (selected) AppColors.SongRowSelectedBackground else AppColors.SurfaceBasic)
+            .border(BORDER_WIDTH, if (selected) AppColors.BrandOrange else AppColors.SpeedChipBackground, RowShape)
             // border는 공간을 차지하지 않으므로 패딩에 두께를 더한다
             .padding(start = 24.dp + BORDER_WIDTH, end = 16.dp + BORDER_WIDTH),
         horizontalArrangement = Arrangement.spacedBy(24.dp),
@@ -66,15 +70,17 @@ fun SongRow(
             Text(text = title, style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
             Text(text = meta, style = AppTypography.LabelMedium, color = AppColors.SongMeta, maxLines = 1)
         }
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(AppColors.SpeedChipBackground)
-                .clickable(role = Role.Button, onClick = onPlay),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(painterResource(R.drawable.ic_play), contentDescription = "재생", tint = AppColors.TextDarkPrimary, modifier = Modifier.size(52.dp))
+        if (onPlay != null) {
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape)
+                    .background(AppColors.SpeedChipBackground)
+                    .clickable(role = Role.Button, onClick = onPlay),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(painterResource(R.drawable.ic_play), contentDescription = "재생", tint = AppColors.TextDarkPrimary, modifier = Modifier.size(52.dp))
+            }
         }
     }
 }

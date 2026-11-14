@@ -145,6 +145,9 @@ object AppColors {
     val SongToneGreen = Color(0xFF14B97E)
     val SongTonePurple = Color(0xFF783EEE)
     val SongMeta = AppPalette.WarmGray900
+
+    // 보관함에서 지울 곡 고르기
+    val SongRowSelectedBackground = Color(0x80FFE2CC)
     val ReplayHint = AppPalette.WarmBlack700
     val ReplayMemberInstrument = AppPalette.WarmGray700
     val ReplayLyricNow = AppPalette.Orange100
