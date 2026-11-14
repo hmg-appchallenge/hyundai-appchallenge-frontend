@@ -1,5 +1,9 @@
 package com.hmgappchallenge.kidsrhythm.ui.component
 
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import com.hmgappchallenge.kidsrhythm.beat.bounceAt
+import com.hmgappchallenge.kidsrhythm.beat.BeatPosition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -60,12 +64,22 @@ private const val ANIMATION_LIFT_RATIO = 14f / 430f
 /** 파티클이 생기는 거리. 캐릭터 가운데에서 바로 생기면 몸에 가려 보이지 않아 가장자리쯤에서 시작한다. */
 private val ParticleStartRadius = 200.dp
 
+/** 박마다 뜨는 높이 (친구 높이 비율). */
+private const val BOUNCE_LIFT_RATIO = 0.035f
+
+/** 박마다 터지는 꽃가루 수. */
+private const val PARTICLES_PER_BEAT = 2
+
 private val StageButtonShape = RoundedCornerShape(32.dp)
 private val StageButtonLabelStyle = AppTypography.TitleMedium.copy(fontWeight = FontWeight.ExtraBold)
 
 /** 무대 가운데 앉은 친구와, 그 둘레로 퍼지는 꽃가루 파티클. */
 @Composable
-fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnimation?, top: Dp, height: Dp) {
+/**
+ * [beat]가 있으면(노래 재생 중) 박마다 살짝 눌렸다 통통 튀어 오르고, 꽃가루도 박에 맞춰 터진다.
+ * 없으면 가만히 앉아 있고 꽃가루는 띄엄띄엄 생긴다.
+ */
+fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnimation?, top: Dp, height: Dp, beat: BeatPosition? = null) {
     val particles = remember { mutableStateListOf<Particle>() }
     var now by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
@@ -77,11 +91,26 @@ fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnima
             }
         }
     }
-    LaunchedEffect(Unit) {
-        val random = Random(System.nanoTime())
+    val random = remember { Random(System.nanoTime()) }
+    val onBeat = beat != null
+    LaunchedEffect(onBeat) {
+        if (onBeat) return@LaunchedEffect
         while (true) {
             particles += randomParticle(random, bornAtMillis = now)
             delay(nextSpawnDelay(random))
+        }
+    }
+    // 재생 중에는 박이 바뀔 때마다 꽃가루를 터뜨린다
+    LaunchedEffect(beat?.index) {
+        if (beat != null) repeat(PARTICLES_PER_BEAT) { particles += randomParticle(random, bornAtMillis = now) }
+    }
+    val bounce = beat?.let { bounceAt(it.phase) }
+    val bounceModifier = Modifier.graphicsLayer {
+        if (bounce != null) {
+            translationY = -(height * BOUNCE_LIFT_RATIO).toPx() * bounce.lift
+            scaleY = bounce.squash
+            scaleX = 2f - bounce.squash
+            transformOrigin = TransformOrigin(0.5f, 1f)
         }
     }
     val note = painterResource(R.drawable.ic_music)
@@ -96,7 +125,8 @@ fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnima
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = top - height * ANIMATION_LIFT_RATIO)
-                .size(height * ANIMATION_SIZE_RATIO),
+                .size(height * ANIMATION_SIZE_RATIO)
+                .then(bounceModifier),
         )
     } else {
         Mascot(
@@ -105,7 +135,8 @@ fun BoxScope.DancingCharacter(character: MascotCharacter, animation: MascotAnima
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = top)
-                .height(height),
+                .height(height)
+                .then(bounceModifier),
         )
     }
 }

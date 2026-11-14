@@ -38,6 +38,7 @@ import com.hmgappchallenge.kidsrhythm.archive.ArchivedSong
 import com.hmgappchallenge.kidsrhythm.archive.durationLabel
 import com.hmgappchallenge.kidsrhythm.audio.SongPlayer
 import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
+import com.hmgappchallenge.kidsrhythm.beat.beatPositionAt
 import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
@@ -258,6 +259,7 @@ private fun ColumnScope.StoppedReplay(
                 animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
                 top = CharacterTop,
                 height = CharacterHeight,
+                beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null,
             )
             StageViewButton(
                 text = "크게 보기",
@@ -324,6 +326,7 @@ private fun ColumnScope.EnlargedReplay(
             animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
             top = BigCharacterTop,
             height = BigCharacterHeight,
+            beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null,
         )
         StageViewButton(
             text = "작게 보기",

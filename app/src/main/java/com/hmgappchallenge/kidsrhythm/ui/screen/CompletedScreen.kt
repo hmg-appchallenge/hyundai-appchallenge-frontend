@@ -61,6 +61,8 @@ import com.hmgappchallenge.kidsrhythm.completed.formatPlayTime
 import com.hmgappchallenge.kidsrhythm.completed.lyricIndexAt
 import com.hmgappchallenge.kidsrhythm.completed.nextSpawnDelay
 import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
+import com.hmgappchallenge.kidsrhythm.beat.BeatPosition
+import com.hmgappchallenge.kidsrhythm.beat.beatPositionAt
 import com.hmgappchallenge.kidsrhythm.completed.randomParticle
 import com.hmgappchallenge.kidsrhythm.ui.component.AnimatedMascot
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotAnimation
@@ -341,6 +343,7 @@ fun CompletedScreen(
                 animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
                 top = CharacterTop,
                 height = CharacterHeight,
+                beat = playingBeat(song, positionMillis, isPlaying),
             )
             if (celebrating) {
                 FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).size(FireworkSize))
@@ -438,6 +441,7 @@ private fun ColumnScope.LyricsOpenView(
             animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
             top = OpenCharacterTop,
             height = OpenCharacterHeight,
+            beat = playingBeat(song, positionMillis, isPlaying),
         )
         if (celebrating) {
             FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).requiredSize(FireworkSize))
@@ -504,6 +508,10 @@ private fun ColumnScope.LyricsOpenView(
     SaveActions(saving, onSave, onMakeAnother)
 }
 
+/** 재생 중일 때만 지금 박을 알려 친구가 박에 맞춰 튀게 한다. */
+private fun playingBeat(song: CompletedSong, positionMillis: Long, isPlaying: Boolean): BeatPosition? =
+    if (isPlaying) beatPositionAt(positionMillis, song.bpm, song.firstBeatMs) else null
+
 /**
  * S06 기본 보기. 왼쪽 무대에서 친구가 춤추고, 오른쪽에서 제목·가사·재생 막대를 보여 준다.
  * 가사 줄을 누르면 그 부분부터 듣는다.
@@ -563,6 +571,7 @@ private fun BasicView(
                     animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
                     top = BasicCharacterTop,
                     height = BasicCharacterHeight,
+                    beat = playingBeat(song, positionMillis, isPlaying),
                 )
                 if (celebrating) {
                     FireworkCelebration(

@@ -17,6 +17,7 @@ data class CompletedSong(
     val durationMillis: Long,
     val createdAtMillis: Long,
     val bpm: Int,
+    val firstBeatMs: Long = 0,
     val lyricStartsMillis: List<Long> = emptyList(),
     val lyricSections: List<String> = emptyList(),
 )
@@ -39,6 +40,7 @@ fun completedSongOf(
         durationMillis = result.durationMs,
         createdAtMillis = createdAtMillis,
         bpm = result.bpm,
+        firstBeatMs = result.firstBeatMs,
         lyricStartsMillis = result.lyrics.map { it.startMs },
         lyricSections = result.lyrics.map { it.section },
     )
