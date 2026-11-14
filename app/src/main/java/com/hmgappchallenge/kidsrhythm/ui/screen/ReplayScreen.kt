@@ -2,15 +2,15 @@ package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import com.hmgappchallenge.kidsrhythm.ui.component.LyricsFocusLayout
+import com.hmgappchallenge.kidsrhythm.ui.component.BigStageLayout
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -18,14 +18,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,26 +37,20 @@ import com.hmgappchallenge.kidsrhythm.archive.ArchivedMember
 import com.hmgappchallenge.kidsrhythm.archive.ArchivedSong
 import com.hmgappchallenge.kidsrhythm.archive.durationLabel
 import com.hmgappchallenge.kidsrhythm.audio.SongPlayer
-import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
 import com.hmgappchallenge.kidsrhythm.beat.beatPositionAt
-import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
-import com.hmgappchallenge.kidsrhythm.ui.component.LyricsPeek
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
 import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
 import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
 import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
 import com.hmgappchallenge.kidsrhythm.ui.component.SongProgressPlayer
-import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
-import com.hmgappchallenge.kidsrhythm.ui.component.StageViewButton
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
 import com.hmgappchallenge.kidsrhythm.ui.component.currentLyricIndex
 import com.hmgappchallenge.kidsrhythm.ui.component.lyricText
-import com.hmgappchallenge.kidsrhythm.ui.component.mascotAnimationFor
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import java.time.Instant
@@ -64,18 +58,6 @@ import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 private val StageShape = RoundedCornerShape(48.dp)
-
-/** 정차 중 무대 높이와 친구 위치. */
-private val StageHeight = 507.dp
-private val StageFloorTop = 364.dp
-private val CharacterTop = 84.dp
-private val CharacterHeight = 351.dp
-
-// 크게 보기는 S06 크게 보기와 같은 무대 크기를 쓴다
-private val BigStageHeight = 598.dp
-private val BigFloorTop = 480.dp
-private val BigCharacterTop = 103.dp
-private val BigCharacterHeight = 430.dp
 
 /**
  * S07-1 다시 듣기. 주행 중에는 친구 없이 제목·가족·가사·재생 막대만 보여 주고(CarUxRestrictions),
@@ -221,9 +203,8 @@ private fun ColumnScope.DrivingReplay(song: ArchivedSong, player: SongPlayer, on
 }
 
 /**
- * 정차 중: 왼쪽 무대에서 친구가 춤추고, 오른쪽에 가사 접기·다른 노래 듣기·지우기.
- * 아래에 지난 줄·지금 줄·다음 두 줄과 미니 플레이어를 둔다.
- * 가사 접기는 가사 줄을 숨기고, 크게 보기는 S06 크게 보기처럼 무대를 넓힌다.
+ * 정차 중: S06 크게 보기와 같은 모습. 처음에는 넓은 무대 아래에 주황 가사 막대를 두고,
+ * 막대를 누르면 무대를 가운데로 줄이고 가사 몇 줄을 펼친다. 아래에 미니 플레이어와 다른 노래 듣기 · 지우기.
  */
 @Composable
 private fun ColumnScope.StoppedReplay(
@@ -234,110 +215,40 @@ private fun ColumnScope.StoppedReplay(
     onOtherSongs: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    var lyricsFolded by rememberSaveable { mutableStateOf(false) }
-    var enlarged by rememberSaveable { mutableStateOf(false) }
-    if (enlarged) {
-        EnlargedReplay(song, player, character, onShrink = { enlarged = false }, onNext = onNext, onOtherSongs = onOtherSongs, onDelete = onDelete)
-        return
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (lyricsFolded) Modifier.weight(1f) else Modifier.height(StageHeight)),
-        horizontalArrangement = Arrangement.spacedBy(48.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxHeight()
-                .clip(StageShape)
-                .background(AppColors.CompletedStageBackground),
-        ) {
-            StageFloor(top = StageFloorTop)
-            DancingCharacter(
-                character,
-                animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
-                top = CharacterTop,
-                height = CharacterHeight,
-                beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null,
-            )
-            StageViewButton(
-                text = "크게 보기",
-                icon = R.drawable.ic_expand,
-                onClick = { enlarged = true },
-                modifier = Modifier.offset(x = 39.dp, y = 36.dp),
-            )
-        }
-        Column(modifier = Modifier.width(700.dp)) {
-            Spacer(Modifier.height(94.dp))
-            Text(
-                "가사 줄을 누르면 그 부분부터 들어요",
-                style = AppTypography.LabelMedium,
-                color = AppColors.ReplayHint,
-                modifier = Modifier.align(Alignment.End),
-            )
-            Spacer(Modifier.height(13.dp))
-            LargeButton(
-                text = if (lyricsFolded) "가사 보기" else "가사 접기",
-                onClick = { lyricsFolded = !lyricsFolded },
-                icon = if (lyricsFolded) R.drawable.ic_expand else R.drawable.ic_shrink,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(Modifier.height(58.dp))
-            LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.fillMaxWidth())
-            Spacer(Modifier.height(14.dp))
-            LargeButton(
-                text = "지우기",
-                onClick = onDelete,
-                icon = R.drawable.ic_trash,
-                variant = LargeButtonVariant.Secondary,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-    if (!lyricsFolded) {
-        CurrentLyrics(song, player, modifier = Modifier.padding(top = 30.dp).fillMaxWidth().height(232.dp))
-        Spacer(Modifier.weight(1f))
-    }
-    ReplayMiniPlayer(song, player, onNext, modifier = Modifier.padding(top = 38.dp).fillMaxWidth())
-}
-
-/** 정차 중 크게 보기: 무대를 가로로 넓히고, 아래에 다른 노래 듣기·지우기와 미니 플레이어를 둔다. */
-@Composable
-private fun ColumnScope.EnlargedReplay(
-    song: ArchivedSong,
-    player: SongPlayer,
-    character: MascotCharacter,
-    onShrink: () -> Unit,
-    onNext: () -> Unit,
-    onOtherSongs: () -> Unit,
-    onDelete: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(BigStageHeight)
-            .clip(StageShape)
-            .background(AppColors.CompletedStageBackground),
-    ) {
-        StageFloor(top = BigFloorTop)
-        DancingCharacter(
-            character,
-            animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
-            top = BigCharacterTop,
-            height = BigCharacterHeight,
-            beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null,
+    var lyricsOpen by rememberSaveable { mutableStateOf(false) }
+    val lines = song.lyricLines
+    val current = currentLyricIndex(lines, player.positionMs)
+    val beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null
+    val miniPlayer: @Composable () -> Unit = { ReplayMiniPlayer(song, player, onNext, modifier = Modifier.fillMaxWidth()) }
+    val actions: @Composable RowScope.() -> Unit = { ReplayActions(onOtherSongs, onDelete) }
+    if (lyricsOpen) {
+        LyricsFocusLayout(
+            character = character,
+            bpm = song.bpm,
+            beat = beat,
+            lines = lines.map { it.text },
+            current = current,
+            activeText = { lyricText(lines[it]) },
+            onLineClick = { player.seekTo(lines[it].startMs) },
+            onFold = { lyricsOpen = false },
+            player = miniPlayer,
+            actions = actions,
         )
-        StageViewButton(
-            text = "작게 보기",
-            icon = R.drawable.ic_shrink,
-            onClick = onShrink,
-            modifier = Modifier.offset(x = 39.dp, y = 36.dp),
+    } else {
+        // 첫 줄 전이면 첫 줄을 미리 보여 준다
+        val line = lines.getOrNull(current.coerceAtLeast(0))
+        BigStageLayout(
+            character = character,
+            bpm = song.bpm,
+            beat = beat,
+            lyric = line?.let { lyricText(it, AppColors.LyricBarHighlight) } ?: AnnotatedString(""),
+            // 다시 듣기에는 작게 볼 다른 화면이 없어서, 작게 보기는 가사를 펼친 모습으로 간다
+            onShrink = { lyricsOpen = true },
+            onOpenLyrics = { lyricsOpen = true },
+            player = miniPlayer,
+            actions = actions,
         )
     }
-    ReplayActions(onOtherSongs, onDelete, modifier = Modifier.padding(top = 32.dp).fillMaxWidth())
-    Spacer(Modifier.weight(1f))
-    ReplayMiniPlayer(song, player, onNext, modifier = Modifier.fillMaxWidth())
 }
 
 @Composable
@@ -356,32 +267,18 @@ private fun ReplayMiniPlayer(song: ArchivedSong, player: SongPlayer, onNext: () 
     )
 }
 
-/** 다시 듣기의 가사 몇 줄. 줄을 누르면 그 부분부터 듣는다. */
+/** 오른쪽 아래의 다른 노래 듣기 · 지우기. */
 @Composable
-private fun CurrentLyrics(song: ArchivedSong, player: SongPlayer, modifier: Modifier = Modifier) {
-    val lines = song.lyricLines
-    LyricsPeek(
-        lines = lines.map { it.text },
-        current = currentLyricIndex(lines, player.positionMs),
-        activeText = { lyricText(lines[it]) },
-        onLineClick = { player.seekTo(lines[it].startMs) },
-        modifier = modifier,
+private fun ReplayActions(onOtherSongs: () -> Unit, onDelete: () -> Unit) {
+    // 320에서는 글자가 잘려, 다 보이는 만큼 넓힌다
+    LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.widthIn(min = 320.dp))
+    LargeButton(
+        text = "지우기",
+        onClick = onDelete,
+        icon = R.drawable.ic_trash,
+        variant = LargeButtonVariant.Secondary,
+        modifier = Modifier.width(320.dp),
     )
-}
-
-@Composable
-private fun ReplayActions(onOtherSongs: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
-        LargeButton(text = "다른 노래 듣기", onClick = onOtherSongs, icon = R.drawable.ic_music, modifier = Modifier.weight(1f))
-        LargeButton(
-            text = "지우기",
-            onClick = onDelete,
-            icon = R.drawable.ic_trash,
-            variant = LargeButtonVariant.Secondary,
-            // 시안 너비 242에서는 글자가 잘릴 수 있어, 다 보이는 만큼만 넓힌다
-            modifier = Modifier.widthIn(min = 242.dp),
-        )
-    }
 }
 
 private fun memberLabel(member: ArchivedMember): String {
