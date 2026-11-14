@@ -11,7 +11,6 @@ import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
 import kotlinx.coroutines.delay
 import com.hmgappchallenge.kidsrhythm.family.objectParticle
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.CircleShape
@@ -121,9 +120,7 @@ fun ArchiveRoute(services: AppServices, onOpenMake: () -> Unit, onOpenSong: (Lon
     TabPage(
         selectedTab = AppTab.Archive,
         headerActions = {
-            if (songs.isEmpty()) {
-                Text("전체 노래 0곡", style = AppTypography.LabelMedium, color = AppColors.TextDarkTertiary)
-            } else {
+            if (songs.isNotEmpty()) {
                 LargeButton(
                     text = "노래 지우기",
                     onClick = {
@@ -343,7 +340,7 @@ internal fun deleteTargetsLabel(titles: List<String>): String {
 private fun EmptyArchive(onOpenMake: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
@@ -355,14 +352,20 @@ private fun EmptyArchive(onOpenMake: () -> Unit) {
         ) {
             Icon(painterResource(R.drawable.ic_music), contentDescription = null, tint = AppColors.EmptyArchiveIcon, modifier = Modifier.size(96.dp))
         }
-        Text("아직 만든 노래가 없어요", style = AppTypography.HeadlineSmall, color = AppColors.TextDarkPrimary)
-        Text("차를 타고 가면서 가족과 첫 노래를 만들어볼까요?", style = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.Normal), color = AppColors.TextDarkSecondary)
+        Text("아직 만든 노래가 없어요", style = AppTypography.HeadlineSmall, color = AppColors.TextDarkPrimary, modifier = Modifier.padding(top = 34.dp))
+        Text(
+            "차를 타고 가면서 가족과 첫 노래를 만들어 볼까요?",
+            style = AppTypography.TitleMedium,
+            color = AppColors.TextDarkSecondary,
+            modifier = Modifier.padding(top = 10.dp),
+        )
         LargeButton(
             text = "노래 만들러 가기",
             onClick = onOpenMake,
-            icon = R.drawable.ic_play,
-            variant = LargeButtonVariant.Filled,
-            modifier = Modifier.width(508.dp),
+            icon = R.drawable.ic_music,
+            modifier = Modifier
+                .padding(top = 40.dp)
+                .width(508.dp),
         )
     }
 }
