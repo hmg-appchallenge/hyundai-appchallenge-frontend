@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -275,8 +276,9 @@ fun SeekTrack(
 }
 
 /**
- * 가사 몇 줄: 지난 줄 하나, 지금 줄(주황 바탕), 다음 두 줄. 아래로 가사가 더 있으면 흐리게 사라진다.
+ * 가사 몇 줄: 지난 줄 하나, 지금 줄(주황 바탕), 다음 [nextLines]줄. [fade]면 아래로 가사가 더 있을 때 흐리게 사라진다.
  * [activeText]로 지금 줄의 강조 글자를 정하고, 줄을 누르면 [onLineClick]으로 그 줄 번호를 알린다.
+ * [overlay]는 상자 위에 겹쳐 그린다 (접기 버튼 등).
  */
 @Composable
 fun LyricsPeek(
@@ -285,6 +287,10 @@ fun LyricsPeek(
     activeText: (Int) -> AnnotatedString,
     onLineClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    nextLines: Int = 2,
+    fade: Boolean = true,
+    contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+    overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     val now = current.coerceAtLeast(0)
     Box(
@@ -293,10 +299,10 @@ fun LyricsPeek(
             .background(AppColors.StageBubbleBackground),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            modifier = Modifier.padding(contentPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            (now - 1..now + 2).filter { it in lines.indices }.forEach { index ->
+            (now - 1..now + nextLines).filter { it in lines.indices }.forEach { index ->
                 val isNow = index == now
                 Box(
                     modifier = Modifier
@@ -319,7 +325,7 @@ fun LyricsPeek(
                 }
             }
         }
-        if (now + 2 < lines.lastIndex) {
+        if (fade && now + nextLines < lines.lastIndex) {
             Box(
                 Modifier
                     .align(Alignment.BottomCenter)
@@ -328,6 +334,7 @@ fun LyricsPeek(
                     .background(Brush.verticalGradient(listOf(Color.Transparent, AppColors.SurfaceBasic))),
             )
         }
+        overlay()
     }
 }
 
