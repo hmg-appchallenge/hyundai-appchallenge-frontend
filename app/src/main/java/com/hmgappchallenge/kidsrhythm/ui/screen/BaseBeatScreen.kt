@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -108,13 +109,22 @@ fun BaseBeatScreen(
                     modifier = Modifier.padding(top = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(15.dp), modifier = Modifier.padding(start = 19.dp)) {
+                    // 3명까지는 시안 폭(235) 그대로, 4명이면 한 줄에 다 들어가게 똑같이 줄인다
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(15.dp),
+                        modifier = Modifier
+                            .padding(start = 19.dp)
+                            .fillMaxWidth(),
+                    ) {
                         family.forEach { member ->
                             InstrumentOption(
                                 instrument = member.instrument,
                                 name = member.name,
                                 season = member.instrument.label,
-                                modifier = Modifier.size(width = 235.dp, height = 392.dp),
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .widthIn(max = InstrumentCardWidth)
+                                    .height(392.dp),
                             )
                         }
                     }
@@ -138,6 +148,9 @@ fun BaseBeatScreen(
         }
     }
 }
+
+/** 비트 화면 가족 카드 폭 (시안, 3명 기준). */
+private val InstrumentCardWidth = 235.dp
 
 @Composable
 private fun BeatStage(bpm: Int, speedLabel: String, beatLabel: String, modifier: Modifier = Modifier) {
