@@ -18,6 +18,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -558,13 +559,16 @@ private fun InstrumentPicker(
                     CategoryChip(c.label, selected = category == c) { category = c }
                 }
             }
+            val scroll = rememberScrollState()
+            // 끝까지 넘겨 더 볼 악기가 없으면 오른쪽 흐림을 서서히 지운다
+            val fadeAlpha by animateFloatAsState(if (scroll.canScrollForward) 1f else 0f, label = "instrumentFade")
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(190.dp),
             ) {
                 Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    modifier = Modifier.horizontalScroll(scroll),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     visible.forEach { instrument ->
@@ -584,6 +588,7 @@ private fun InstrumentPicker(
                         .align(Alignment.CenterEnd)
                         .width(160.dp)
                         .fillMaxHeight()
+                        .alpha(fadeAlpha)
                         .background(Brush.horizontalGradient(listOf(Color.Transparent, AppColors.BackgroundPopup))),
                 )
             }
