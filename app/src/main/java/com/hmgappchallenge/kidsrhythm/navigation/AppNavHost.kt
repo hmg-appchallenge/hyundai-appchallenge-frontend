@@ -413,6 +413,12 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 songId = entry.arguments?.getLong(Route.ARG_ID) ?: 0L,
                 driving = !vehicle.isStopped(),
                 character = character,
+                // 정차 중 첫 모습은 S06과 같은 설정(기본 보기 · 정차하면 크게 보기)을 따른다
+                startEnlarged = startsEnlarged(
+                    services.settings.songViewMode,
+                    services.settings.autoEnlargeWhenStopped,
+                    stopped = vehicle.isStopped(),
+                ),
                 onBack = { navController.popBackStack() },
                 // 다음 곡은 지금 다시 듣기를 바꿔 끼운다 (뒤로 가면 보관함)
                 onOpenSong = { id ->

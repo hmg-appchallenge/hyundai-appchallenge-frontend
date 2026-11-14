@@ -17,6 +17,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
@@ -88,6 +93,10 @@ val PrivacyPolicySections = listOf(
     PolicySection(null, "6. 문의", "개인정보 보호책임자: $TEAM_CONTACT_EMAIL"),
 )
 
+
+/** 본문 절 사이 간격. */
+private val SECTION_GAP = 40.dp
+
 /**
  * S00-1 개인정보 처리방침. 왼쪽 목차를 누르면 그 절로 가고, 본문을 넘기면 지금 보는 절이 목차에 표시된다.
  * [returnHint]는 확인 버튼 옆 안내 (동의 화면에서 왔는지, 설정에서 왔는지).
@@ -96,7 +105,7 @@ val PrivacyPolicySections = listOf(
 fun PrivacyPolicyScreen(returnHint: String, onConfirm: () -> Unit, onBack: () -> Unit) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    // 목차를 누르면 그 절을 강조한다. 본문이 짧아 아래쪽 절은 맨 위까지 오지 못하므로, 손으로 넘기기 전까지 누른 절을 유지한다
+    // 목차를 누르면 그 절을 강조한다. 손으로 넘기기 전까지 누른 절을 유지한다
     var tapped by remember { mutableStateOf<Int?>(null) }
     var programmaticScroll by remember { mutableStateOf(false) }
     LaunchedEffect(listState) {
@@ -104,6 +113,18 @@ fun PrivacyPolicyScreen(returnHint: String, onConfirm: () -> Unit, onBack: () ->
     }
     val visible by remember { derivedStateOf { listState.firstVisibleItemIndex.coerceAtMost(PrivacyPolicySections.lastIndex - 1) } }
     val current = tapped ?: visible
+    // 본문 끝에 빈 자리를 두어 마지막 목차 절(5번)까지 맨 위로 올라오게 한다. 그 절부터 끝까지의 높이를 재서 화면 높이에 모자란 만큼 채운다
+    val sectionHeights = remember { mutableStateMapOf<Int, Int>() }
+    val density = LocalDensity.current
+    val lastTocIndex = PrivacyPolicySections.indexOfLast { it.tocTitle != null }
+    val tailSpace by remember {
+        derivedStateOf {
+            val viewport = listState.layoutInfo.viewportSize.height
+            val gap = with(density) { SECTION_GAP.roundToPx() }
+            val below = (lastTocIndex..PrivacyPolicySections.lastIndex).sumOf { (sectionHeights[it] ?: 0) + gap }
+            with(density) { (viewport - below).coerceAtLeast(0).toDp() }
+        }
+    }
     SubPage(title = "개인정보 처리방침", onBack = onBack) {
         Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             Column(modifier = Modifier.width(375.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -139,14 +160,18 @@ fun PrivacyPolicyScreen(returnHint: String, onConfirm: () -> Unit, onBack: () ->
                     .clip(ContentShape)
                     .background(AppColors.SurfaceBasic),
                 contentPadding = PaddingValues(horizontal = 48.dp, vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(40.dp),
+                verticalArrangement = Arrangement.spacedBy(SECTION_GAP),
             ) {
-                itemsIndexed(PrivacyPolicySections) { _, section ->
-                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                itemsIndexed(PrivacyPolicySections) { index, section ->
+                    Column(
+                        modifier = Modifier.onSizeChanged { sectionHeights[index] = it.height },
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
                         Text(section.title, style = SectionTitleStyle, color = AppColors.TextDarkPrimary)
                         Text(section.body, style = SectionBodyStyle, color = AppColors.SongMeta)
                     }
                 }
+                item { Spacer(Modifier.height(tailSpace)) }
             }
         }
         Row(
