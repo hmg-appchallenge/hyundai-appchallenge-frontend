@@ -150,9 +150,11 @@ fun HomeScreen(
             if (isDisconnected) {
                 ConnectionBanner(onRetry = onRetryConnection, modifier = Modifier.padding(bottom = 20.dp).fillMaxWidth())
             }
+            // 인터넷이나 노래 서버가 끊겼으면 위 안내를 보여 주고 시작 버튼은 잠근다
             LargeButton(
                 text = "노래 만들기 시작",
                 onClick = onStart,
+                enabled = !isDisconnected,
                 icon = R.drawable.ic_play,
                 textStyle = AppTypography.TitleMedium,
                 modifier = Modifier.fillMaxWidth(),

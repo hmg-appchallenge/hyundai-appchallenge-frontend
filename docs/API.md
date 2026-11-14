@@ -65,7 +65,7 @@
 
 | 항목 | 값 |
 |---|---|
-| 주소 | 같은 PC의 에뮬레이터: `http://10.0.2.2:8000`. 다른 곳에서는 서버 PC가 연 https 주소예요. 심사용 고정 주소는 정하는 중이고(백엔드 저장소 README "심사용 고정 주소로 켜 두기"), `share-server.bat`의 임시 주소(`https://….trycloudflare.com`)는 다시 열면 바뀌어요. 앱은 프론트 `local.properties`의 `kidsrhythm.serverUrl`로 바꿔요 |
+| 주소 | 심사용 고정 주소: `https://awqdqwd-kidsrhythm-server.hf.space` (Hugging Face Spaces, 11/14부터). 같은 PC의 에뮬레이터는 `http://10.0.2.2:8000`. 앱은 프론트 `local.properties`의 `kidsrhythm.serverUrl`로 바꿔요 |
 | 인증 | 서버에 `KR_API_KEY`를 정하면, 바깥에서 오는 요청(고정 주소, 임시 공개 주소)은 헤더 `X-Api-Key: <팀 공유 키>`가 꼭 있어야 해요 (앱은 `kidsrhythm.apiKey`). 같은 PC에서 바로 온 요청(로컬 서버에 붙은 에뮬레이터)은 키 없이 받아요. `GET /v1/health`는 키 없이 열려요. 키에 만료는 없어요. 팀 키는 저장소에 올리지 않고 따로 전달해요 |
 | 서버 키 | 외부 AI 키(`ANTHROPIC_API_KEY`, `ELEVENLABS_API_KEY`)와 팀 키는 서버 PC의 `ai-keys.env`에만 있어요. 앱에는 외부 AI 키가 없어요 |
 | 형식 | JSON(UTF-8). 시간은 따로 적지 않으면 초 단위, 이름이 `Ms`로 끝나면 밀리초 |
