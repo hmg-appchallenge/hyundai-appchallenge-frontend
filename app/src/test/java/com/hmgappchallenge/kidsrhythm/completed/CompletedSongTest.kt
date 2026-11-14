@@ -36,7 +36,7 @@ class CompletedSongTest {
     @Test
     fun `들린 단어도 없으면 날짜 제목을 붙인다`() {
         val song = completedSongOf(result(), nov11, zone)
-        assertEquals("11월 11일 드라이브 노래", song.title)
+        assertEquals("11월 11일 노래", song.title)
         assertEquals(null, song.highlightWord)
     }
 

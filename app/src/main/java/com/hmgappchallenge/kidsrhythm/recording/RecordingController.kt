@@ -276,7 +276,8 @@ class RecordingController(
             phase = Phase.Done
             songId
         } catch (e: ServerException) {
-            canRetryFinish = e.isNetwork || e.httpStatus >= 500
+            // 429(RATE_LIMITED)는 서버 문장을 그대로 보여 준다. 세션이 10분 남아 있어 잠시 뒤 다시 완성할 수 있다
+            canRetryFinish = e.isNetwork || e.httpStatus == 429 || e.httpStatus >= 500
             fail(if (e.isNetwork) "노래 서버에 연결할 수 없어요. 서버를 확인하고 다시 완성해 주세요." else e.message ?: "서버 오류")
             null
         }
