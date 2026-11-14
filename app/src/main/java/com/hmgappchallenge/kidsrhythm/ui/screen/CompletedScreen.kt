@@ -1,16 +1,13 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -23,26 +20,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.drawscope.rotate
-import androidx.compose.ui.graphics.drawscope.translate
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
@@ -54,24 +40,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.completed.CompletedSong
-import com.hmgappchallenge.kidsrhythm.completed.Particle
-import com.hmgappchallenge.kidsrhythm.completed.ParticleShape
 import com.hmgappchallenge.kidsrhythm.completed.dateTitle
 import com.hmgappchallenge.kidsrhythm.completed.formatPlayTime
 import com.hmgappchallenge.kidsrhythm.completed.lyricIndexAt
-import com.hmgappchallenge.kidsrhythm.completed.nextSpawnDelay
 import com.hmgappchallenge.kidsrhythm.beat.speedZoneForBpm
 import com.hmgappchallenge.kidsrhythm.beat.BeatPosition
 import com.hmgappchallenge.kidsrhythm.beat.beatPositionAt
-import com.hmgappchallenge.kidsrhythm.completed.randomParticle
-import com.hmgappchallenge.kidsrhythm.ui.component.AnimatedMascot
-import com.hmgappchallenge.kidsrhythm.ui.component.MascotAnimation
 import com.hmgappchallenge.kidsrhythm.ui.component.mascotAnimationFor
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
-import com.hmgappchallenge.kidsrhythm.ui.component.Mascot
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
-import com.hmgappchallenge.kidsrhythm.ui.component.MascotPose
 import com.hmgappchallenge.kidsrhythm.ui.component.StageFloor
 import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
 import com.hmgappchallenge.kidsrhythm.ui.component.FireworkCelebration
@@ -81,9 +59,6 @@ import com.hmgappchallenge.kidsrhythm.ui.component.Toast
 import com.hmgappchallenge.kidsrhythm.ui.component.dropShadow
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.random.Random
 import java.time.ZoneId
 import java.io.IOException
 import kotlinx.coroutines.delay
@@ -99,27 +74,19 @@ import com.hmgappchallenge.kidsrhythm.AppServices
 import com.hmgappchallenge.kidsrhythm.ui.component.josa
 import com.hmgappchallenge.kidsrhythm.ui.component.HintChip
 import com.hmgappchallenge.kidsrhythm.ui.component.SpeechBubble
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.gestures.detectTapGestures
 import com.hmgappchallenge.kidsrhythm.ui.component.StageViewButton
 import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.highlightWord
 import com.hmgappchallenge.kidsrhythm.ui.component.SongProgressPlayer
 import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
-import com.hmgappchallenge.kidsrhythm.ui.component.LyricsPeek
+import com.hmgappchallenge.kidsrhythm.ui.component.BigStageLayout
+import com.hmgappchallenge.kidsrhythm.ui.component.LyricsFocusLayout
 import com.hmgappchallenge.kidsrhythm.ui.component.SeekTrack
 import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.ui.draw.rotate
 
 private val StageShape = RoundedCornerShape(48.dp)
 private val TrackShape = RoundedCornerShape(6.dp)
@@ -130,28 +97,9 @@ private const val SAVE_ERROR_MILLIS = 3_000L
 
 private val FireworkSize = DpSize(800.dp, 600.dp)
 
-private val StageHeight = 479.dp
-private val FloorTop = 334.dp
-
-/** 크게 보기에서 앉은 친구가 무대 가운데에 앉는 위치와 높이. 파티클은 이 친구의 가운데에서 퍼진다. */
-private val CharacterTop = 67.dp
-private val CharacterHeight = 363.dp
-
 /** 기본 보기에서 왼쪽 무대에 앉는 친구의 위치와 높이. */
 private val BasicCharacterTop = 287.dp
 private val BasicCharacterHeight = 488.dp
-
-/** 크게 보기에서 가사를 펼쳤을 때 가운데로 줄어든 무대(12칸 중 가운데 8칸)와 친구, 가사 상자 높이. */
-private const val OPEN_STAGE_WIDTH = 1022f / 1572f
-private val OpenStageHeight = 404.dp
-private val OpenFloorTop = 312.dp
-private val OpenCharacterTop = 43.dp
-private val OpenCharacterHeight = 340.dp
-private val OpenLyricsHeight = 236.dp
-
-/** 크게 보기의 주황 가사 막대. 누르면 가사를 펼친다. */
-private val LyricBarShape = RoundedCornerShape(32.dp)
-
 
 /** 기본 보기 패널. */
 private val EditButtonShape = RoundedCornerShape(20.dp)
@@ -312,84 +260,72 @@ fun CompletedScreen(
             )
         },
     ) {
+        val beat = playingBeat(song, positionMillis, isPlaying)
+        // 아직 저장하지 않은 곡이라 다음 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
+        val restart = {
+            onSeek(0)
+            if (!isPlaying) onTogglePlay()
+        }
         if (lyricsOpen) {
-            LyricsOpenView(
-                song = song,
+            LyricsFocusLayout(
                 character = character,
-                membersLabel = membersLabel,
-                isPlaying = isPlaying,
-                positionMillis = positionMillis,
-                saving = saving,
-                onTogglePlay = onTogglePlay,
-                onSeek = onSeek,
-                onClose = { lyricsOpen = false },
-                onSave = onSave,
-                onMakeAnother = onMakeAnother,
-                celebrating = celebrating,
-                onCelebrationEnd = onCelebrationEnd,
+                bpm = song.bpm,
+                beat = beat,
+                lines = song.lyrics,
+                current = lyricIndexAt(song, positionMillis),
+                activeText = { highlightWord(song.lyrics[it], song.highlightWord) },
+                onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
+                onFold = { lyricsOpen = false },
+                stageOverlay = {
+                    if (celebrating) FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).requiredSize(FireworkSize))
+                },
+                player = {
+                    SongMiniPlayer(
+                        title = song.title,
+                        subtitle = membersLabel,
+                        progress = if (song.durationMillis > 0) positionMillis.toFloat() / song.durationMillis else 0f,
+                        isPlaying = isPlaying,
+                        onTogglePlay = onTogglePlay,
+                        onNext = restart,
+                        buttonSize = 63.dp,
+                        onSeek = { onSeek((it * song.durationMillis).toLong()) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                },
+                actions = { SaveActions(saving, onSave, onMakeAnother) },
             )
             return@SubPage
         }
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(StageHeight)
-                .clip(StageShape)
-                .background(AppColors.CompletedStageBackground),
-        ) {
-            StageFloor(top = FloorTop)
-            DancingCharacter(
-                character,
-                animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
-                top = CharacterTop,
-                height = CharacterHeight,
-                beat = playingBeat(song, positionMillis, isPlaying),
-            )
-            if (celebrating) {
-                FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).size(FireworkSize))
-            }
-            StageViewButton(
-                text = "작게 보기",
-                icon = R.drawable.ic_shrink,
-                onClick = { enlarged = false },
-                modifier = Modifier.offset(x = 39.dp, y = 36.dp),
-            )
-        }
-        LyricBar(
-            lyric,
-            song.highlightWord,
-            onClick = { lyricsOpen = true },
-            modifier = Modifier
-                .padding(top = 31.dp)
-                .fillMaxWidth(),
-        )
-        Spacer(Modifier.height(24.dp))
-        MiniPlayer(
-            title = song.title,
-            subtitle = membersLabel,
-            positionMillis = positionMillis,
-            durationMillis = song.durationMillis,
-            isPlaying = isPlaying,
-            onTogglePlay = onTogglePlay,
-            onSeek = { onSeek((it * song.durationMillis).toLong()) },
-            // 아직 저장하지 않은 곡이라 다른 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
-            onNext = {
-                onSeek(0)
-                if (!isPlaying) onTogglePlay()
+        BigStageLayout(
+            character = character,
+            bpm = song.bpm,
+            beat = beat,
+            lyric = barText(lyric, song.highlightWord),
+            onShrink = { enlarged = false },
+            onOpenLyrics = { lyricsOpen = true },
+            stageOverlay = {
+                if (celebrating) FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).size(FireworkSize))
             },
+            player = {
+                MiniPlayer(
+                    title = song.title,
+                    subtitle = membersLabel,
+                    positionMillis = positionMillis,
+                    durationMillis = song.durationMillis,
+                    isPlaying = isPlaying,
+                    onTogglePlay = onTogglePlay,
+                    onSeek = { onSeek((it * song.durationMillis).toLong()) },
+                    onNext = restart,
+                )
+            },
+            actions = { SaveActions(saving, onSave, onMakeAnother) },
         )
-        Spacer(Modifier.weight(1f))
-        SaveActions(saving, onSave, onMakeAnother)
     }
 }
 
 /** 크게 보기 오른쪽 아래의 보관함에 저장 · 한 곡 더. */
 @Composable
 private fun SaveActions(saving: Boolean, onSave: () -> Unit, onMakeAnother: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
-    ) {
         LargeButton(
             text = if (saving) "저장하는 중" else "보관함에 저장",
             onClick = onSave,
@@ -404,108 +340,6 @@ private fun SaveActions(saving: Boolean, onSave: () -> Unit, onMakeAnother: () -
             variant = LargeButtonVariant.Secondary,
             modifier = Modifier.width(320.dp),
         )
-    }
-}
-
-/**
- * 크게 보기에서 가사를 펼친 모습. 무대는 가운데로 줄고, 아래에 가사 몇 줄·미니 플레이어·저장 버튼을 둔다.
- * 가사 줄을 누르면 그 부분부터 듣고, 무대의 크게 보기를 누르면 [onClose]로 다시 접는다.
- */
-@Composable
-private fun ColumnScope.LyricsOpenView(
-    song: CompletedSong,
-    character: MascotCharacter,
-    membersLabel: String,
-    isPlaying: Boolean,
-    positionMillis: Long,
-    saving: Boolean,
-    onTogglePlay: () -> Unit,
-    onSeek: (Long) -> Unit,
-    onClose: () -> Unit,
-    onSave: () -> Unit,
-    onMakeAnother: () -> Unit,
-    celebrating: Boolean,
-    onCelebrationEnd: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .align(Alignment.CenterHorizontally)
-            .fillMaxWidth(OPEN_STAGE_WIDTH)
-            .height(OpenStageHeight)
-            .clip(StageShape)
-            .background(AppColors.CompletedStageBackground),
-    ) {
-        StageFloor(top = OpenFloorTop)
-        DancingCharacter(
-            character,
-            animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
-            top = OpenCharacterTop,
-            height = OpenCharacterHeight,
-            beat = playingBeat(song, positionMillis, isPlaying),
-        )
-        if (celebrating) {
-            FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).requiredSize(FireworkSize))
-        }
-        StageViewButton(
-            text = "크게 보기",
-            icon = R.drawable.ic_expand,
-            onClick = onClose,
-            modifier = Modifier.offset(x = 39.dp, y = 36.dp),
-        )
-    }
-    LyricsPeek(
-        lines = song.lyrics,
-        current = lyricIndexAt(song, positionMillis),
-        activeText = { highlightWord(song.lyrics[it], song.highlightWord) },
-        onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
-        nextLines = 1,
-        fade = false,
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        lineSpacing = 11.dp,
-        modifier = Modifier
-            .padding(top = 27.dp)
-            .fillMaxWidth()
-            .height(OpenLyricsHeight),
-    ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 22.dp, end = 34.dp)
-                .size(52.dp)
-                .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = onClose),
-            contentAlignment = Alignment.Center,
-        ) {
-            // 뒤로 가기 화살표를 아래로 돌려 접기 표시로 쓴다
-            Icon(
-                painterResource(R.drawable.ic_back),
-                contentDescription = "가사 접기",
-                tint = AppColors.LyricsFoldIcon,
-                modifier = Modifier
-                    .size(52.dp)
-                    .rotate(-90f),
-            )
-        }
-    }
-    SongMiniPlayer(
-        title = song.title,
-        subtitle = membersLabel,
-        progress = if (song.durationMillis > 0) positionMillis.toFloat() / song.durationMillis else 0f,
-        isPlaying = isPlaying,
-        onTogglePlay = onTogglePlay,
-        // 아직 저장하지 않은 곡이라 다른 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
-        onNext = {
-            onSeek(0)
-            if (!isPlaying) onTogglePlay()
-        },
-        buttonSize = 63.dp,
-        onSeek = { onSeek((it * song.durationMillis).toLong()) },
-        modifier = Modifier
-            .padding(top = 24.dp)
-            .fillMaxWidth(),
-    )
-    Spacer(Modifier.weight(1f))
-    SaveActions(saving, onSave, onMakeAnother)
 }
 
 /** 재생 중일 때만 지금 박을 알려 친구가 박에 맞춰 튀게 한다. */
@@ -671,40 +505,15 @@ private fun SongTitle(title: String, label: String, onEdit: () -> Unit) {
     }
 }
 
-/** 크게 보기의 주황 가사 막대: 지금 부르는 한 줄과 펼치기 표시. 제목 단어는 흰색으로 강조한다. */
-@Composable
-private fun LyricBar(line: String, highlight: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .height(100.dp)
-            .clip(LyricBarShape)
-            .background(AppColors.BrandOrange)
-            .clickable(role = Role.Button, onClickLabel = "가사 펼치기", onClick = onClick)
-            .padding(start = 43.dp, end = 34.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(painterResource(R.drawable.ic_music), contentDescription = null, tint = AppColors.LyricBarHighlight, modifier = Modifier.size(36.dp))
-        val text = buildAnnotatedString {
-            val start = highlight?.let { line.indexOf(it) } ?: -1
-            if (highlight == null || start < 0) {
-                append(line)
-            } else {
-                append(line.substring(0, start))
-                withStyle(SpanStyle(color = AppColors.LyricBarHighlight)) { append(highlight) }
-                append(line.substring(start + highlight.length))
-            }
-        }
-        Text(text, style = AppTypography.TitleSmall, color = AppColors.LyricBarText, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-        // 뒤로 가기 화살표를 위로 돌려 펼치기 표시로 쓴다
-        Icon(
-            painterResource(R.drawable.ic_back),
-            contentDescription = null,
-            tint = AppColors.LyricBarHighlight,
-            modifier = Modifier
-                .size(52.dp)
-                .rotate(90f),
-        )
+/** 주황 가사 막대에 쓸 지금 줄. 제목 단어는 흰색으로 강조한다. */
+private fun barText(line: String, highlight: String?): AnnotatedString = buildAnnotatedString {
+    val start = highlight?.let { line.indexOf(it) } ?: -1
+    if (highlight == null || start < 0) {
+        append(line)
+    } else {
+        append(line.substring(0, start))
+        withStyle(SpanStyle(color = AppColors.LyricBarHighlight)) { append(highlight) }
+        append(line.substring(start + highlight.length))
     }
 }
 

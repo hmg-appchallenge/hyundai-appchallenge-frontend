@@ -25,6 +25,7 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -55,10 +56,10 @@ fun formatClock(ms: Long): String {
 }
 
 /** 가족 목소리에서 나온 단어(명사)는 주황으로 칠한다 (S06 시안의 '사과'). */
-fun lyricText(line: LyricLine): AnnotatedString = buildAnnotatedString {
+fun lyricText(line: LyricLine, highlightColor: Color = AppColors.BrandOrange): AnnotatedString = buildAnnotatedString {
     append(line.text)
     line.highlights.filter { it.kind == "word" && it.start in 0..it.end && it.end <= line.text.length }.forEach {
-        addStyle(SpanStyle(color = AppColors.BrandOrange, fontWeight = FontWeight.Bold), it.start, it.end)
+        addStyle(SpanStyle(color = highlightColor, fontWeight = FontWeight.Bold), it.start, it.end)
     }
 }
 
