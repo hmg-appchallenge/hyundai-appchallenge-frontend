@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.annotation.DrawableRes
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
@@ -158,12 +159,14 @@ fun SubPage(
     modifier: Modifier = Modifier,
     headerActions: @Composable RowScope.() -> Unit = {},
     overlay: @Composable BoxScope.() -> Unit = {},
+    @DrawableRes backIcon: Int = R.drawable.ic_back,
+    backDescription: String = "뒤로",
     content: @Composable ColumnScope.() -> Unit,
 ) {
     AppWindow(
         header = {
             Row(modifier = Modifier.fillMaxSize(), verticalAlignment = Alignment.CenterVertically) {
-                BackHeader(title, onBack)
+                BackHeader(title, onBack, backIcon, backDescription)
                 Spacer(Modifier.weight(1f))
                 headerActions()
             }
@@ -175,7 +178,7 @@ fun SubPage(
 }
 
 @Composable
-private fun BackHeader(title: String, onBack: () -> Unit) {
+private fun BackHeader(title: String, onBack: () -> Unit, @DrawableRes icon: Int, description: String) {
     Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
         Box(
             modifier = Modifier
@@ -185,7 +188,7 @@ private fun BackHeader(title: String, onBack: () -> Unit) {
                 .clickable(role = Role.Button, onClick = onBack),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(painterResource(R.drawable.ic_back), contentDescription = "뒤로", tint = AppColors.IconDarkPrimary, modifier = Modifier.size(52.dp))
+            Icon(painterResource(icon), contentDescription = description, tint = AppColors.IconDarkPrimary, modifier = Modifier.size(52.dp))
         }
         Text(text = title, style = AppTypography.TitleLarge, color = AppColors.TextDarkPrimary)
     }
