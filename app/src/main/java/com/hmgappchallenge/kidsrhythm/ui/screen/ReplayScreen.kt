@@ -72,6 +72,7 @@ fun ReplayRoute(
     onBack: () -> Unit,
     onOpenSong: (Long) -> Unit,
     onChangeCharacter: () -> Unit,
+    startEnlarged: Boolean = true,
 ) {
     val songs by services.archive.songs.collectAsState()
     val song = songs.firstOrNull { it.id == songId }
@@ -134,7 +135,7 @@ fun ReplayRoute(
                 )
             },
         ) {
-            StoppedReplay(song, player, character, onNext = onNext, onOtherSongs = onBack, onDelete = { confirmDelete = true })
+            StoppedReplay(song, player, character, startEnlarged, onNext = onNext, onOtherSongs = onBack, onDelete = { confirmDelete = true })
         }
     }
 }
@@ -211,11 +212,13 @@ private fun ColumnScope.StoppedReplay(
     song: ArchivedSong,
     player: SongPlayer,
     character: MascotCharacter,
+    startEnlarged: Boolean,
     onNext: () -> Unit,
     onOtherSongs: () -> Unit,
     onDelete: () -> Unit,
 ) {
-    var lyricsOpen by rememberSaveable { mutableStateOf(false) }
+    // 설정이 크게 보기면 넓은 무대로, 기본 보기면 무대를 줄이고 가사를 펼친 모습으로 시작한다
+    var lyricsOpen by rememberSaveable { mutableStateOf(!startEnlarged) }
     val lines = song.lyricLines
     val current = currentLyricIndex(lines, player.positionMs)
     val beat = if (player.isPlaying) beatPositionAt(player.positionMs, song.bpm, song.firstBeatMs) else null
