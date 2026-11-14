@@ -1,10 +1,12 @@
 package com.hmgappchallenge.kidsrhythm
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.hmgappchallenge.kidsrhythm.archive.FileSongArchive
+import com.hmgappchallenge.kidsrhythm.archive.SampleSongSeeder
 import com.hmgappchallenge.kidsrhythm.audio.BeatPlayer
 import com.hmgappchallenge.kidsrhythm.audio.InstrumentSounds
 import com.hmgappchallenge.kidsrhythm.audio.PcmRecorder
@@ -20,10 +22,14 @@ import com.hmgappchallenge.kidsrhythm.server.SongService
 import com.hmgappchallenge.kidsrhythm.vehicle.CarVehicleSignals
 import com.hmgappchallenge.kidsrhythm.vehicle.VehicleSignals
 import java.io.File
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+
+private const val TAG = "AppServices"
 
 /** S05에서 받은 완성곡을 S06으로 넘긴다. */
 data class CompletedSong(val songId: String, val result: SongResult, val audioFile: File, val createdAtMillis: Long)
@@ -49,6 +55,26 @@ class AppServices(context: Context) {
 
     /** 화면이 닫혀도 끝까지 해야 하는 일 (서버에 지우기 요청 등). */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    init {
+        // 처음 켰을 때 보관함이 비어 보이지 않게 예시 곡을 한 번 넣는다 (지우면 다시 넣지 않음)
+        val seeder = SampleSongSeeder(
+            archive = archive,
+            marker = File(appContext.filesDir, "sample_song_seeded"),
+            readInfo = { appContext.resources.openRawResource(R.raw.sample_song_info).bufferedReader().use { it.readText() } },
+            openAudio = { appContext.resources.openRawResource(R.raw.sample_song) },
+            workDir = File(appContext.cacheDir, "sample"),
+        )
+        appScope.launch {
+            try {
+                seeder.seedOnce()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "예시 곡을 보관함에 못 넣었어요", e)
+            }
+        }
+    }
 
     var completedSong: CompletedSong? by mutableStateOf(null)
 

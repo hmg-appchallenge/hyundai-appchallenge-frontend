@@ -1,0 +1,310 @@
+{
+  "about": "11/12 Hugging Face Space 서버에 시험 녹음(TTS로 만든 아이·엄마 목소리)을 넣어 만든 예시 곡. 앱을 처음 켰을 때 보관함에 한 번 넣는다.",
+  "createdAtMillis": 1794458985000,
+  "members": [
+    {
+      "memberId": 1,
+      "name": "아이",
+      "instrument": "DRUM"
+    },
+    {
+      "memberId": 2,
+      "name": "엄마",
+      "instrument": "SHAKER"
+    },
+    {
+      "memberId": 3,
+      "name": "아빠",
+      "instrument": "BELL"
+    }
+  ],
+  "result": {
+    "title": "우리 바다 가자",
+    "durationMs": 61100,
+    "bpm": 110,
+    "beatType": 8,
+    "firstBeatMs": 300,
+    "lyrics": [
+      {
+        "text": "둥둥둥둥 랄랄라",
+        "startMs": 4780,
+        "endMs": 9160,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 5,
+            "end": 8,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "엄마가 좋아",
+        "startMs": 9160,
+        "endMs": 13520,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 2,
+            "memberId": 2,
+            "kind": "word"
+          }
+        ]
+      },
+      {
+        "text": "강아지 부릉부릉",
+        "startMs": 13520,
+        "endMs": 17980,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 3,
+            "memberId": 1,
+            "kind": "word"
+          },
+          {
+            "start": 4,
+            "end": 8,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "우리 바다 가자",
+        "startMs": 17980,
+        "endMs": 22280,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 3,
+            "end": 5,
+            "memberId": 2,
+            "kind": "word"
+          }
+        ]
+      },
+      {
+        "text": "부릉부릉 랄랄라",
+        "startMs": 22280,
+        "endMs": 26620,
+        "section": "chorus",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 4,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          },
+          {
+            "start": 5,
+            "end": 8,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "우리 바다 가자 랄랄라",
+        "startMs": 26620,
+        "endMs": 31000,
+        "section": "chorus",
+        "highlights": [
+          {
+            "start": 3,
+            "end": 5,
+            "memberId": 2,
+            "kind": "word"
+          },
+          {
+            "start": 9,
+            "end": 12,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "사과 맛있다",
+        "startMs": 31000,
+        "endMs": 35320,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 2,
+            "memberId": 2,
+            "kind": "word"
+          }
+        ]
+      },
+      {
+        "text": "둥둥 둥둥 랄랄라",
+        "startMs": 35320,
+        "endMs": 39960,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 6,
+            "end": 9,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "엄마가 좋아 강아지",
+        "startMs": 39960,
+        "endMs": 44080,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 2,
+            "memberId": 2,
+            "kind": "word"
+          },
+          {
+            "start": 7,
+            "end": 10,
+            "memberId": 1,
+            "kind": "word"
+          }
+        ]
+      },
+      {
+        "text": "부릉부릉 바다 가자",
+        "startMs": 44080,
+        "endMs": 48480,
+        "section": "verse",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 4,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          },
+          {
+            "start": 5,
+            "end": 7,
+            "memberId": 2,
+            "kind": "word"
+          }
+        ]
+      },
+      {
+        "text": "부릉부릉 랄랄라",
+        "startMs": 48480,
+        "endMs": 52800,
+        "section": "chorus",
+        "highlights": [
+          {
+            "start": 0,
+            "end": 4,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          },
+          {
+            "start": 5,
+            "end": 8,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "우리 바다 가자 랄랄라",
+        "startMs": 52800,
+        "endMs": 57140,
+        "section": "chorus",
+        "highlights": [
+          {
+            "start": 3,
+            "end": 5,
+            "memberId": 2,
+            "kind": "word"
+          },
+          {
+            "start": 9,
+            "end": 12,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      },
+      {
+        "text": "둥둥 랄랄라",
+        "startMs": 57140,
+        "endMs": 61400,
+        "section": "outro",
+        "highlights": [
+          {
+            "start": 3,
+            "end": 6,
+            "memberId": 1,
+            "kind": "onomatopoeia"
+          }
+        ]
+      }
+    ],
+    "words": [
+      {
+        "text": "강아지",
+        "memberId": 1
+      },
+      {
+        "text": "엄마",
+        "memberId": 2
+      },
+      {
+        "text": "바다",
+        "memberId": 2
+      },
+      {
+        "text": "사과",
+        "memberId": 2
+      }
+    ],
+    "onomatopoeia": [
+      {
+        "text": "랄랄라",
+        "memberId": 1
+      },
+      {
+        "text": "부릉부릉",
+        "memberId": 1
+      },
+      {
+        "text": "둥둥둥둥",
+        "memberId": 2
+      },
+      {
+        "text": "둥둥",
+        "memberId": 3
+      }
+    ],
+    "members": [
+      {
+        "memberId": 1,
+        "instrument": "DRUM",
+        "speechSec": 2.5
+      },
+      {
+        "memberId": 2,
+        "instrument": "SHAKER",
+        "speechSec": 3.5
+      },
+      {
+        "memberId": 3,
+        "instrument": "BELL",
+        "speechSec": 1.1
+      }
+    ],
+    "audio": {
+      "url": ""
+    }
+  }
+}
