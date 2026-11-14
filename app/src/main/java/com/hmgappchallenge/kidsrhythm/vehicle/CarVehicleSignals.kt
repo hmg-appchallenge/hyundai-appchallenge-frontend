@@ -41,19 +41,32 @@ class CarVehicleSignals(
      * 디버그 빌드 전용: 앱 내부 폴더의 debug_speed.txt(숫자, km/h)가 있으면 그 속도를 쓴다.
      * 에뮬레이터는 adb로 넣은 속도가 다음 측정 때 0으로 돌아가서, 데모·시험 때 속도를 고정하려고 둔다.
      */
-    private val debugSpeedFile: File? =
-        if ((context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0) File(context.filesDir, DEBUG_SPEED_FILE) else null
+    private val debuggable = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
 
-    private fun debugSpeed(file: File): Flow<Float?> = flow {
+    /** 1초마다 [file]을 읽어 [parse]한 값. 파일이 없으면 null(차량 값을 그대로 쓴다). */
+    private fun <T> debugOverride(file: File, parse: (String) -> T?): Flow<T?> = flow {
         while (true) {
-            emit(if (file.exists()) file.readText().trim().toFloatOrNull()?.coerceIn(0f, 250f) else null)
+            emit(if (file.exists()) parse(file.readText().trim()) else null)
             delay(DEBUG_SPEED_POLL_MS)
         }
     }.distinctUntilChanged().flowOn(Dispatchers.IO)
 
-    override val state: Flow<VehicleState> = debugSpeedFile?.let { file ->
-        combine(carState(), debugSpeed(file)) { car, forced -> if (forced != null) car.copy(speedKmh = forced) else car }
-    } ?: carState()
+    /**
+     * 디버그 빌드 전용: debug_driving.txt가 있으면 주행 중(1)·정차(0)를 그 값으로 정한다.
+     * 이 에뮬레이터는 adb로 주행 중 화면 제한을 바꿀 수 없어서, 시연 영상·시험 때 주행 화면을 보려고 둔다.
+     */
+    override val state: Flow<VehicleState> =
+        if (!debuggable) {
+            carState()
+        } else {
+            combine(
+                carState(),
+                debugOverride(File(context.filesDir, DEBUG_SPEED_FILE)) { it.toFloatOrNull()?.coerceIn(0f, 250f) },
+                debugOverride(File(context.filesDir, DEBUG_DRIVING_FILE)) { it.toIntOrNull()?.let { v -> v != 0 } },
+            ) { car, speed, driving ->
+                car.copy(speedKmh = speed ?: car.speedKmh, isUxRestricted = driving ?: car.isUxRestricted)
+            }
+        }
 
     // registerCallback(callback, id, rate)는 API 35에서 지원 중단 표시가 붙었지만, 대체 API(subscribePropertyEvents)는 API 35부터라 targetSdk 34에서는 이것을 쓴다
     @Suppress("DEPRECATION")
@@ -150,6 +163,7 @@ class CarVehicleSignals(
         const val TAG = "CarVehicleSignals"
         const val PERMISSION_POLL_MS = 1_000L
         const val DEBUG_SPEED_FILE = "debug_speed.txt"
+        const val DEBUG_DRIVING_FILE = "debug_driving.txt"
         const val DEBUG_SPEED_POLL_MS = 1_000L
     }
 }
