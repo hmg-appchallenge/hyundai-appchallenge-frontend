@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디자인 원본 경로를 그대로 쓰려고 정밀도 축소 경고를 끈다. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:ignore="VectorPath"
+    android:width="40dp"
+    android:height="40dp"
+    android:viewportWidth="40"
+    android:viewportHeight="40">
+    <path
+        android:pathData="M10.8333 31.6667C8.92179 31.6588 7.08537 30.9214 5.69929 29.605C4.3132 28.2887 3.48205 26.4927 3.37566 24.5841C3.26928 22.6755 3.89568 20.7984 5.12688 19.3361C6.35808 17.8738 8.10117 16.9369 10 16.7167C10.3448 14.511 11.4177 12.4841 13.0479 10.9589C14.6781 9.43362 16.7718 8.49774 18.9956 8.30029C21.2193 8.10284 23.4451 8.65517 25.3186 9.86931C27.192 11.0835 28.6053 12.8896 29.3333 15C31.1795 15.0174 32.9544 15.7152 34.3182 16.9598C35.682 18.2043 36.5388 19.9082 36.7245 21.7451C36.9103 23.582 36.4119 25.4229 35.3249 26.9153C34.2379 28.4077 32.6387 29.4467 30.8333 29.8333"
+        android:strokeWidth="3.33333"
+        android:strokeColor="#FE3D16"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M5 5L35 35"
+        android:strokeWidth="3.66667"
+        android:strokeColor="#FE3D16"
+        android:strokeLineCap="round" />
+</vector>

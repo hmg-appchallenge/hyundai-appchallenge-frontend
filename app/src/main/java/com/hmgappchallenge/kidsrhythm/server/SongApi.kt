@@ -119,6 +119,14 @@ class SongApi(
         call("POST", "/v1/sessions/$sessionId/finish", jsonBody(body), "application/json", readTimeoutMs = 60_000).json().optString("songId")
     }
 
+    override suspend fun isReachable(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            callOnce("GET", "/v1/health", null, null, ServerConfig.CONNECT_TIMEOUT_MS).code in 200..299
+        } catch (_: ServerException) {
+            false
+        }
+    }
+
     override suspend fun cancelSession(sessionId: String) = withContext(Dispatchers.IO) {
         call("DELETE", "/v1/sessions/$sessionId").ensureOk()
     }
