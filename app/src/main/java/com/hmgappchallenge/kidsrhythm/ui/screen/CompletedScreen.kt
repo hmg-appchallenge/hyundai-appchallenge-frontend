@@ -456,7 +456,8 @@ private fun ColumnScope.LyricsOpenView(
         onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
         nextLines = 1,
         fade = false,
-        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 29.dp),
+        contentPadding = PaddingValues(horizontal = 24.dp),
+        lineSpacing = 11.dp,
         modifier = Modifier
             .padding(top = 27.dp)
             .fillMaxWidth()
