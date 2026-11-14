@@ -117,6 +117,12 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 services.player.pause()
             }
             val connectivity = rememberConnectivityState()
+            // 인터넷이 있어도 노래 서버가 꺼져 있으면 같은 안내를 띄운다. 홈에 들어올 때, 연결이 바뀔 때, 다시 시도할 때 확인한다
+            var serverReachable by remember { mutableStateOf(true) }
+            var serverCheck by remember { mutableIntStateOf(0) }
+            LaunchedEffect(connectivity.online, serverCheck) {
+                serverReachable = !connectivity.online || services.songService.isReachable()
+            }
             val context = LocalContext.current
             // 마이크 권한이 없으면 시스템 권한 창을 먼저 띄우고, 거절되면 S01 "마이크를 쓸 수 없어요"를 보여 준다
             var micBlocked by remember { mutableStateOf(false) }
@@ -150,8 +156,11 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 onOpenPrivacy = { navController.navigate(Route.privacy(fromSettings = false)) },
                 consentNoticeCount = consentGate.noticeCount,
                 onTapConsentNotice = consentGate::openDialog,
-                isOffline = !connectivity.online,
-                onRetryConnection = connectivity::recheck,
+                isDisconnected = !connectivity.online || !serverReachable,
+                onRetryConnection = {
+                    connectivity.recheck()
+                    serverCheck++
+                },
                 micBlocked = micBlocked,
                 onDismissMicBlocked = { micBlocked = false },
                 onOpenMicSettings = {

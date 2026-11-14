@@ -22,6 +22,8 @@ class FakeSongService(private val latencyMillis: Long = 300L) : SongService {
 
     override suspend fun finish(sessionId: String, drive: DriveInfo, beat: BeatInfo): String = "fake-song"
 
+    override suspend fun isReachable(): Boolean = true
+
     override suspend fun cancelSession(sessionId: String) = Unit
 
     override suspend fun status(songId: String): SongStatus {

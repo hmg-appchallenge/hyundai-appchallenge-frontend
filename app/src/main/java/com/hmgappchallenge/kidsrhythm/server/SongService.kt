@@ -4,6 +4,9 @@ import java.io.File
 
 /** 노래 생성 서버와 주고받는 일 (docs/API.md v0.2). 실제 구현은 [SongApi], 시험용은 [FakeSongService]. */
 interface SongService {
+    /** 서버에 닿는지 본다 (`GET /v1/health`, 키 없이). 닿지 않으면 false. */
+    suspend fun isReachable(): Boolean
+
     /** 가족 목소리 등록 녹음(wav)으로 목소리 특징을 만든다. */
     suspend fun embedVoice(wav: ByteArray): VoiceEmbedResult
 

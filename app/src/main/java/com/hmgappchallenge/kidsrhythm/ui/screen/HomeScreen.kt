@@ -58,8 +58,8 @@ import kotlinx.coroutines.delay
 
 private const val CONSENT_NOTICE_MILLIS = 3_000L
 
-private val OfflineBannerShape = RoundedCornerShape(24.dp)
-private val OfflineRetryShape = RoundedCornerShape(16.dp)
+private val ConnectionBannerShape = RoundedCornerShape(24.dp)
+private val ConnectionRetryShape = RoundedCornerShape(16.dp)
 
 /** 홈에 보여 줄 최근 곡 한 줄. */
 data class RecentSong(val title: String, val meta: String)
@@ -82,7 +82,7 @@ fun HomeScreen(
     onOpenPrivacy: () -> Unit = {},
     consentNoticeCount: Int = 0,
     onTapConsentNotice: () -> Unit = {},
-    isOffline: Boolean = false,
+    isDisconnected: Boolean = false,
     onRetryConnection: () -> Unit = {},
     micBlocked: Boolean = false,
     onDismissMicBlocked: () -> Unit = {},
@@ -147,8 +147,8 @@ fun HomeScreen(
                 }
                 Spacer(Modifier.weight(1f))
             }
-            if (isOffline) {
-                OfflineBanner(onRetry = onRetryConnection, modifier = Modifier.padding(bottom = 20.dp).fillMaxWidth())
+            if (isDisconnected) {
+                ConnectionBanner(onRetry = onRetryConnection, modifier = Modifier.padding(bottom = 20.dp).fillMaxWidth())
             }
             LargeButton(
                 text = "노래 만들기 시작",
@@ -276,34 +276,34 @@ private fun NoVoicePopupPreview() {
     )
 }
 
-/** 인터넷이 끊겼을 때 노래 만들기 버튼 위에 보이는 안내. 보관함은 그대로 들을 수 있다. */
+/** 인터넷이 끊겼거나 노래 서버에 닿지 않을 때 노래 만들기 버튼 위에 보이는 안내. 두 경우 모두 같은 문구다. */
 @Composable
-private fun OfflineBanner(onRetry: () -> Unit, modifier: Modifier = Modifier) {
+private fun ConnectionBanner(onRetry: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .height(104.dp)
-            .clip(OfflineBannerShape)
-            .background(AppColors.OfflineBannerBackground)
-            .border(2.dp, AppColors.InformativeNegative, OfflineBannerShape)
+            .clip(ConnectionBannerShape)
+            .background(AppColors.ConnectionBannerBackground)
+            .border(2.dp, AppColors.InformativeNegative, ConnectionBannerShape)
             .padding(start = 24.dp, end = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(painterResource(R.drawable.ic_wifi_off), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(40.dp))
+        Icon(painterResource(R.drawable.ic_cloud_off), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(40.dp))
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text("인터넷 연결이 끊겼어요", style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
-            Text("연결되면 다시 만들 수 있어요 · 보관함은 들을 수 있어요", style = AppTypography.LabelSmall, color = AppColors.TextWarmBody, maxLines = 1)
+            Text("지금은 노래를 만들 수 없어요", style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
+            Text("연결 상태가 좋지 않아요 · 잠시 후 다시 시도해 주세요", style = AppTypography.LabelSmall, color = AppColors.TextWarmBody, maxLines = 1)
         }
         Box(
             modifier = Modifier
                 .height(68.dp)
-                .clip(OfflineRetryShape)
+                .clip(ConnectionRetryShape)
                 .background(AppColors.PopupWarmBackground)
                 .clickable(role = Role.Button, onClick = onRetry)
                 .padding(horizontal = 24.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Text("다시 연결", style = AppTypography.BodySmallStrong, color = AppColors.TextDarkPrimary)
+            Text("다시 시도", style = AppTypography.BodySmallStrong, color = AppColors.TextDarkPrimary)
         }
     }
 }
