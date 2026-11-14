@@ -65,4 +65,21 @@ class CompletedSongTest {
         val members = listOf(FamilyMember(1, "엄마", Instrument.DRUM), FamilyMember(2, "첫째", Instrument.TAMBOURINE))
         assertEquals("엄마 북 · 첫째 탬버린", memberInstrumentsLabel(members))
     }
+
+    @Test
+    fun `서버 제목이 12자를 넘으면 12자 안의 마지막 띄어쓰기에서 끊는다`() {
+        assertEquals("우리 가족 신나는", completedSongOf(result(title = "우리 가족 신나는 드라이브 노래"), nov11, zone).title)
+    }
+
+    @Test
+    fun `띄어쓰기 없이 12자를 넘으면 12자에서 자른다`() {
+        assertEquals("가나다라마바사아자차카타", fitTitle("가나다라마바사아자차카타파하"))
+    }
+
+    @Test
+    fun `들린 단어가 없어도 날짜 제목으로 완성곡을 만든다`() {
+        val song = completedSongOf(result(title = "", words = emptyList()), nov11, zone)
+        assertEquals("11월 11일 노래", song.title)
+        assertEquals(null, song.highlightWord)
+    }
 }
