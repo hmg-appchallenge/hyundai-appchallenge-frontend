@@ -274,6 +274,8 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             )
         }
         composable(Route.VOICE_SETTINGS) {
+            // 비트 화면에서 넘어와도 목소리를 녹음하는 동안 비트가 섞이지 않게 끈다. 비트 화면으로 돌아가면 다시 튼다
+            LaunchedEffect(Unit) { services.beatPlayer.stop() }
             var editor by remember { mutableStateOf<MemberEditorMode?>(null) }
             val enrollment = remember { VoiceEnrollment(services.newRecorder(), services.songService) }
             var toast by remember { mutableStateOf<String?>(null) }
