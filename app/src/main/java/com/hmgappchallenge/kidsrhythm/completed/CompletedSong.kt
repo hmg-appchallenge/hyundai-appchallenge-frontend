@@ -31,7 +31,7 @@ fun completedSongOf(
     zone: ZoneId = ZoneId.systemDefault(),
 ): CompletedSong {
     val word = result.words.firstOrNull()?.text?.takeIf { it.isNotBlank() }
-    val title = result.title.takeIf { it.isNotBlank() } ?: word?.let { "$it 노래" } ?: dateTitle(createdAtMillis, zone)
+    val title = fitTitle(result.title).takeIf { it.isNotBlank() } ?: word?.let { fitTitle("$it 노래") } ?: dateTitle(createdAtMillis, zone)
     return CompletedSong(
         title = title,
         highlightWord = word,
@@ -42,6 +42,21 @@ fun completedSongOf(
         lyricStartsMillis = result.lyrics.map { it.startMs },
         lyricSections = result.lyrics.map { it.section },
     )
+}
+
+/** 제목에 쓸 수 있는 글자 수 (띄어쓰기 포함). 직접 고칠 때도 같은 한도다. */
+const val MAX_TITLE_LENGTH = 12
+
+/**
+ * 서버 제목은 12자를 넘겨 올 수 있어 앱에서 줄인다. 서버와 같은 방식으로 12자 안의 마지막 띄어쓰기에서 끊고,
+ * 띄어쓰기가 없으면 12자에서 자른다.
+ */
+internal fun fitTitle(title: String): String {
+    val trimmed = title.trim()
+    if (trimmed.length <= MAX_TITLE_LENGTH) return trimmed
+    val head = trimmed.take(MAX_TITLE_LENGTH + 1)
+    val cut = head.lastIndexOf(' ').takeIf { it > 0 } ?: MAX_TITLE_LENGTH
+    return trimmed.take(cut).trimEnd()
 }
 
 /** 들린 단어가 없을 때 붙는 제목. 예: "11월 11일 노래" */

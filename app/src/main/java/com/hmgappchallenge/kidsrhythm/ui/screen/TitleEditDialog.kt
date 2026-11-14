@@ -37,13 +37,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.R
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
+import com.hmgappchallenge.kidsrhythm.completed.MAX_TITLE_LENGTH
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
-
-/** 노래 제목 최대 글자 수 (공백 포함). */
-const val MAX_TITLE_LENGTH = 12
 
 private val FieldShape = RoundedCornerShape(24.dp)
 private val FIELD_BORDER = 3.dp
