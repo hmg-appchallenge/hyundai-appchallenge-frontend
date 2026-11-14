@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -106,10 +105,10 @@ fun BaseBeatScreen(
                     Text("각자 어울리는 악기로 하나의 비트를 만들어요", style = AppTypography.TitleMedium, color = AppColors.TextWarm)
                 }
                 Column(
-                    modifier = Modifier.padding(start = 19.dp, top = 72.dp),
+                    modifier = Modifier.padding(top = 72.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(15.dp), modifier = Modifier.padding(start = 19.dp)) {
                         family.forEach { member ->
                             InstrumentOption(
                                 instrument = member.instrument,
@@ -124,7 +123,8 @@ fun BaseBeatScreen(
                         title = "목소리 설정",
                         subtitle = "가족의 목소리를 녹음에 추가해요",
                         onClick = onOpenVoiceSettings,
-                        modifier = Modifier.width(735.dp),
+                        // 아래 녹음 시작하기 버튼과 같은 폭으로, 화면이 넓어지면 같이 넓어진다
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
                 Spacer(Modifier.weight(1f))

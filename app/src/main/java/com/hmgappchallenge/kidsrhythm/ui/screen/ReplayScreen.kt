@@ -1,7 +1,6 @@
 package com.hmgappchallenge.kidsrhythm.ui.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,11 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.hmgappchallenge.kidsrhythm.AppServices
@@ -49,6 +43,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.Instrument
 import com.hmgappchallenge.kidsrhythm.ui.component.InstrumentBadge
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
+import com.hmgappchallenge.kidsrhythm.ui.component.LyricsPeek
 import com.hmgappchallenge.kidsrhythm.ui.component.MascotCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.WarmConfirmPopup
 import com.hmgappchallenge.kidsrhythm.ui.component.PlayerTicker
@@ -68,11 +63,6 @@ import java.time.ZoneId
 import kotlinx.coroutines.launch
 
 private val StageShape = RoundedCornerShape(48.dp)
-private val LyricBoxShape = RoundedCornerShape(32.dp)
-private val LyricLineShape = RoundedCornerShape(16.dp)
-
-/** 지금 줄이 아닌 가사 (30/38 Regular). 공용 타이포 토큰에 없는 굵기라 여기서만 쓴다. */
-private val LyricOtherStyle = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.Normal)
 
 /** 정차 중 무대 높이와 친구 위치. */
 private val StageHeight = 507.dp
@@ -358,58 +348,22 @@ private fun ReplayMiniPlayer(song: ArchivedSong, player: SongPlayer, onNext: () 
         onTogglePlay = player::toggle,
         onNext = onNext,
         buttonSize = 63.dp,
+        onSeek = { if (duration > 0) player.seekTo((it * duration).toLong()) },
         modifier = modifier,
     )
 }
 
-/** 지난 줄 하나, 지금 줄(주황 바탕), 다음 두 줄. 아래로 가사가 더 있으면 흐리게 사라진다. */
+/** 다시 듣기의 가사 몇 줄. 줄을 누르면 그 부분부터 듣는다. */
 @Composable
 private fun CurrentLyrics(song: ArchivedSong, player: SongPlayer, modifier: Modifier = Modifier) {
     val lines = song.lyricLines
-    val current = currentLyricIndex(lines, player.positionMs).coerceAtLeast(0)
-    Box(
-        modifier = modifier
-            .clip(LyricBoxShape)
-            .background(AppColors.StageBubbleBackground),
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            (current - 1..current + 2).filter { it in lines.indices }.forEach { index ->
-                val line = lines[index]
-                val now = index == current
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(LyricLineShape)
-                        .then(if (now) Modifier.background(AppColors.ReplayLyricNow) else Modifier)
-                        .clickable(role = Role.Button) { player.seekTo(line.startMs) }
-                        .padding(start = 16.dp, end = 24.dp, top = if (now) 10.dp else 2.dp, bottom = if (now) 10.dp else 2.dp),
-                ) {
-                    Text(
-                        text = if (now) lyricText(line) else AnnotatedString(line.text),
-                        style = if (now) AppTypography.TitleLargeExtraStrong else LyricOtherStyle,
-                        color = when {
-                            now -> AppColors.TextDarkPrimary
-                            index < current -> AppColors.ReplayLyricPast
-                            else -> AppColors.ReplayLyricNext
-                        },
-                        maxLines = 1,
-                    )
-                }
-            }
-        }
-        if (current + 2 < lines.lastIndex) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .height(55.dp)
-                    .background(Brush.verticalGradient(listOf(Color.Transparent, AppColors.SurfaceBasic))),
-            )
-        }
-    }
+    LyricsPeek(
+        lines = lines.map { it.text },
+        current = currentLyricIndex(lines, player.positionMs),
+        activeText = { lyricText(lines[it]) },
+        onLineClick = { player.seekTo(lines[it].startMs) },
+        modifier = modifier,
+    )
 }
 
 @Composable

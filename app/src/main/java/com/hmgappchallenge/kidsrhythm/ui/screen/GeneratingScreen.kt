@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -68,7 +67,9 @@ import com.hmgappchallenge.kidsrhythm.ui.component.LargeButton
 import com.hmgappchallenge.kidsrhythm.ui.component.LargeButtonVariant
 
 private val StageShape = RoundedCornerShape(48.dp)
-private val StageWidth = 774.dp
+/** 무대와 오른쪽 안내의 폭 비율 (774 : 746). 화면이 넓어지면 둘 다 같은 비율로 넓어진다. */
+private const val STAGE_WEIGHT = 774f
+private const val PANEL_WEIGHT = 746f
 private val StagePanelGap = 52.dp
 
 /** 캐릭터가 앉는 바닥선과 캐릭터 높이. 여백 없는 이미지를 같은 높이로 맞춰 같은 바닥에 앉힌다. */
@@ -225,7 +226,7 @@ fun GeneratingScreen(word: String?, doneCount: Int, onBack: () -> Unit, overlay:
         Row(modifier = Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(StagePanelGap)) {
             Box(
                 modifier = Modifier
-                    .width(StageWidth)
+                    .weight(STAGE_WEIGHT)
                     .fillMaxHeight()
                     .clip(StageShape)
                     .background(AppColors.StageBackground),
@@ -247,7 +248,7 @@ fun GeneratingScreen(word: String?, doneCount: Int, onBack: () -> Unit, overlay:
             }
             Column(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(PANEL_WEIGHT)
                     .fillMaxHeight()
                     // 시안의 내용 상자는 아래에 여백이 조금 더 있다
                     .padding(bottom = 19.dp),
