@@ -120,6 +120,8 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
             val context = LocalContext.current
             // 마이크 권한이 없으면 시스템 권한 창을 먼저 띄우고, 거절되면 S01 "마이크를 쓸 수 없어요"를 보여 준다
             var micBlocked by remember { mutableStateOf(false) }
+            // 목소리를 등록한 가족이 없으면 녹음에서 누가 말했는지 알 수 없어 등록을 먼저 권한다
+            var noVoice by remember { mutableStateOf(false) }
             val micLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
                 if (granted) navController.navigate(Route.INTRO) else micBlocked = true
             }
@@ -129,7 +131,9 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 isConsentVisible = consentGate.isDialogVisible,
                 onStart = {
                     if (consentGate.requestStart()) {
-                        if (context.hasMicPermission()) navController.navigate(Route.INTRO) else micLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        if (family.none { it.hasVoice }) {
+                            noVoice = true
+                        } else if (context.hasMicPermission()) navController.navigate(Route.INTRO) else micLauncher.launch(Manifest.permission.RECORD_AUDIO)
                     }
                 },
                 onOpenArchive = { navController.navigate(Route.ARCHIVE) },
@@ -153,6 +157,12 @@ fun AppNavHost(services: AppServices, consentStore: ConsentStore) {
                 onOpenMicSettings = {
                     micBlocked = false
                     context.openAppDetails()
+                },
+                noVoice = noVoice,
+                onDismissNoVoice = { noVoice = false },
+                onRegisterVoice = {
+                    noVoice = false
+                    navController.navigate(Route.VOICE_SETTINGS)
                 },
             )
         }
