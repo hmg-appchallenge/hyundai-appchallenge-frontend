@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -79,11 +80,14 @@ private val CharacterHeight = 412.dp
 private val CharacterTop = CharacterFloor - CharacterHeight
 
 /** 이웃한 캐릭터 그림 사이의 빈 간격. 캐릭터마다 그림 폭이 달라서 폭을 보고 자리를 잡는다. */
-private const val CHARACTER_GAP_DP = 8f
+private const val CHARACTER_GAP_DP = 24f
 
 /** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도와 불투명도. */
 private val SideCharacterBlur = 4.dp
 private const val SIDE_CHARACTER_ALPHA = 0.4f
+
+/** 무대 바닥은 어느 친구보다도 아래에 그린다. */
+private const val FLOOR_Z_INDEX = -10f
 
 /** 캐릭터가 한 자리에 머무는 시간과 왼쪽으로 한 칸 밀리는 시간. 차량 화면이라 시선이 덜 흔들리게 천천히 바꾼다. */
 private const val CAROUSEL_HOLD_MILLIS = 3_500L
@@ -232,7 +236,8 @@ fun GeneratingScreen(word: String?, doneCount: Int, onBack: () -> Unit, overlay:
                     .clip(StageShape)
                     .background(AppColors.StageBackground),
             ) {
-                StageFloor()
+                // 친구들은 가운데에서 멀수록 zIndex가 음수라, 바닥을 그보다 아래에 두어야 다리가 바닥에 덮이지 않는다
+                StageFloor(Modifier.zIndex(FLOOR_Z_INDEX))
                 CharacterCarousel()
                 SpeechBubble(
                     text = "조금만 기다려줘!",
@@ -313,7 +318,8 @@ private fun BoxScope.CharacterCarousel() {
                 .offset(x = carouselOffset(index, slot, widths, CHARACTER_GAP_DP).dp)
                 .height(CharacterHeight)
                 .alpha(1f - (1f - SIDE_CHARACTER_ALPHA) * distance)
-                .blur(SideCharacterBlur * distance),
+                // 테두리 밖까지 번지게 해야 그림 아래 끝에 닿은 다리가 잘려 흐려지지 않는다
+                .blur(SideCharacterBlur * distance, BlurredEdgeTreatment.Unbounded),
         )
     }
     Box(

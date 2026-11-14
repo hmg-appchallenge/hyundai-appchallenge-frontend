@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -290,6 +291,7 @@ fun LyricsPeek(
     nextLines: Int = 2,
     fade: Boolean = true,
     contentPadding: PaddingValues = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+    lineSpacing: Dp = 8.dp,
     overlay: @Composable BoxScope.() -> Unit = {},
 ) {
     val now = current.coerceAtLeast(0)
@@ -298,12 +300,19 @@ fun LyricsPeek(
             .clip(PeekBoxShape)
             .background(AppColors.StageBubbleBackground),
     ) {
+        // 지난 줄이나 다음 줄이 없어도 자리를 비워 두어, 지금 줄이 늘 같은 높이에 오고 묶음이 상자 가운데에 놓이게 한다
         Column(
-            modifier = Modifier.padding(contentPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(contentPadding),
+            verticalArrangement = Arrangement.spacedBy(lineSpacing, Alignment.CenterVertically),
         ) {
-            (now - 1..now + nextLines).filter { it in lines.indices }.forEach { index ->
+            (now - 1..now + nextLines).forEach { index ->
                 val isNow = index == now
+                if (index !in lines.indices) {
+                    Text(" ", style = PeekOtherStyle, modifier = Modifier.padding(vertical = 2.dp))
+                    return@forEach
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
