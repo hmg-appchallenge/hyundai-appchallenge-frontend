@@ -217,10 +217,8 @@ fun SettingsScreen(state: SettingsState, actions: SettingsActions) {
                     )
                 }
                 SettingsGroup("앱 정보") {
-                    SettingsRow("버전", null, value = "0.1 (공모전 데모)", onClick = null)
-                    SettingsDivider()
-                    // 차량에는 메일 앱이 없어 누를 곳은 없고, 시안처럼 화살표만 둔다
-                    SettingsRow("문의하기", TEAM_CONTACT_EMAIL, onClick = null, showChevron = true)
+                    // 누를 곳 없이 버전과 문의 메일을 알려 주는 정보 줄이다
+                    SettingsRow("앱 정보 및 문의", "버전 0.1 · $TEAM_CONTACT_EMAIL", onClick = null)
                 }
             }
         }
@@ -279,11 +277,10 @@ private fun SettingsRow(
     value: String? = null,
     valueColor: Color = AppColors.TextDarkPrimary,
     onClick: (() -> Unit)?,
-    showChevron: Boolean = onClick != null,
 ) {
     SettingsRowFrame(title, subtitle, onClick) {
         if (value != null) Text(value, style = AppTypography.BodySmallStrong, color = valueColor)
-        if (showChevron) {
+        if (onClick != null) {
             Icon(painterResource(R.drawable.ic_chevron_right), contentDescription = null, tint = AppColors.SongMeta, modifier = Modifier.size(40.dp))
         }
     }
