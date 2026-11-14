@@ -3,7 +3,9 @@ package com.hmgappchallenge.kidsrhythm.ui.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,10 +26,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
@@ -49,6 +58,11 @@ private val MiniTrackShape = RoundedCornerShape(6.dp)
 private val MiniPlayerShape = RoundedCornerShape(32.dp)
 private val TileShape = RoundedCornerShape(20.dp)
 private val MiniSubtitleStyle = AppTypography.LabelMedium.copy(fontSize = 22.sp)
+private val PeekBoxShape = RoundedCornerShape(32.dp)
+private val PeekLineShape = RoundedCornerShape(16.dp)
+
+/** 지금 줄이 아닌 가사 (30/38 Regular). 공용 타이포 토큰에 없는 굵기라 여기서만 쓴다. */
+private val PeekOtherStyle = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.Normal)
 
 /** 가사 줄에서 [word]가 나오는 곳을 모두 주황으로 칠한다. */
 fun highlightWord(line: String, word: String?): AnnotatedString = buildAnnotatedString {
@@ -103,7 +117,7 @@ fun SongLyricsList(
     }
 }
 
-/** 재생 막대: 재생·멈춤 버튼, 눌러서 옮기는 진행 막대, "0:39 / 1:42". [onNext]가 있으면 오른쪽에 다음 곡 버튼을 둔다. */
+/** 재생 막대: 재생·멈춤 버튼, 누르거나 끌어서 옮기는 진행 막대, "0:39 / 1:42". [onNext]가 있으면 오른쪽에 다음 곡 버튼을 둔다. */
 @Composable
 fun SongProgressPlayer(
     isPlaying: Boolean,
@@ -126,24 +140,13 @@ fun SongProgressPlayer(
         )
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val fraction = if (durationMillis > 0) (positionMillis.toFloat() / durationMillis).coerceIn(0f, 1f) else 0f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(16.dp)
-                    .clip(ProgressShape)
-                    .background(AppColors.BasicProgressTrack)
-                    .pointerInput(durationMillis) {
-                        detectTapGestures { offset -> if (durationMillis > 0) onSeek((offset.x / size.width * durationMillis).toLong()) }
-                    },
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(fraction)
-                        .fillMaxHeight()
-                        .clip(ProgressShape)
-                        .background(AppColors.BrandOrange),
-                )
-            }
+            SeekTrack(
+                progress = fraction,
+                height = 16.dp,
+                shape = ProgressShape,
+                trackColor = AppColors.BasicProgressTrack,
+                onSeek = { if (durationMillis > 0) onSeek((it * durationMillis).toLong()) },
+            )
             Text("${formatPlayTime(positionMillis)} / ${formatPlayTime(durationMillis)}", style = AppTypography.LabelMedium, color = AppColors.RecordingTime)
         }
         if (onNext != null) {
@@ -176,6 +179,7 @@ fun SongMiniPlayer(
     subtitle: String? = null,
     buttonSize: Dp = 80.dp,
     onClick: (() -> Unit)? = null,
+    onSeek: ((Float) -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -194,21 +198,7 @@ fun SongMiniPlayer(
                 Text(title, style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkPrimary, maxLines = 1)
                 if (subtitle != null) Text(subtitle, style = MiniSubtitleStyle, color = AppColors.TextDarkTertiary, maxLines = 1)
             }
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(MiniTrackShape)
-                    .background(AppColors.SpeedChipBackground),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(progress.coerceIn(0f, 1f))
-                        .fillMaxHeight()
-                        .clip(MiniTrackShape)
-                        .background(AppColors.BrandOrange),
-                )
-            }
+            SeekTrack(progress, height = 12.dp, shape = MiniTrackShape, trackColor = AppColors.SpeedChipBackground, onSeek = onSeek)
         }
         val iconSize = buttonSize * 0.65f
         RoundIconButton(
@@ -229,6 +219,115 @@ fun SongMiniPlayer(
             background = AppColors.SpeedChipBackground,
             tint = AppColors.TextDarkPrimary,
         )
+    }
+}
+
+/**
+ * 진행 막대. [onSeek]가 있으면 누른 곳으로 옮기고, 끄는 동안은 손가락을 따라 막대만 움직이다가 손을 떼면 그 위치로 옮긴다.
+ * [onSeek]에는 0~1 비율을 넘긴다.
+ */
+@Composable
+fun SeekTrack(
+    progress: Float,
+    height: Dp,
+    shape: Shape,
+    trackColor: Color,
+    modifier: Modifier = Modifier,
+    onSeek: ((Float) -> Unit)? = null,
+) {
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    val seek by rememberUpdatedState(onSeek)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(height)
+            .clip(shape)
+            .background(trackColor)
+            .then(
+                if (onSeek == null) {
+                    Modifier
+                } else {
+                    Modifier.pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown()
+                            fun fractionAt(x: Float) = (x / size.width).coerceIn(0f, 1f)
+                            dragging = fractionAt(down.position.x)
+                            val finished = horizontalDrag(down.id) { change ->
+                                dragging = fractionAt(change.position.x)
+                                change.consume()
+                            }
+                            val target = dragging
+                            dragging = null
+                            if (finished && target != null) seek?.invoke(target)
+                        }
+                    }
+                },
+            ),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth((dragging ?: progress).coerceIn(0f, 1f))
+                .fillMaxHeight()
+                .clip(shape)
+                .background(AppColors.BrandOrange),
+        )
+    }
+}
+
+/**
+ * 가사 몇 줄: 지난 줄 하나, 지금 줄(주황 바탕), 다음 두 줄. 아래로 가사가 더 있으면 흐리게 사라진다.
+ * [activeText]로 지금 줄의 강조 글자를 정하고, 줄을 누르면 [onLineClick]으로 그 줄 번호를 알린다.
+ */
+@Composable
+fun LyricsPeek(
+    lines: List<String>,
+    current: Int,
+    activeText: (Int) -> AnnotatedString,
+    onLineClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val now = current.coerceAtLeast(0)
+    Box(
+        modifier = modifier
+            .clip(PeekBoxShape)
+            .background(AppColors.StageBubbleBackground),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            (now - 1..now + 2).filter { it in lines.indices }.forEach { index ->
+                val isNow = index == now
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(PeekLineShape)
+                        .then(if (isNow) Modifier.background(AppColors.ReplayLyricNow) else Modifier)
+                        .clickable(role = Role.Button) { onLineClick(index) }
+                        .padding(start = 16.dp, end = 24.dp, top = if (isNow) 10.dp else 2.dp, bottom = if (isNow) 10.dp else 2.dp),
+                ) {
+                    Text(
+                        text = if (isNow) activeText(index) else AnnotatedString(lines[index]),
+                        style = if (isNow) AppTypography.TitleLargeExtraStrong else PeekOtherStyle,
+                        color = when {
+                            isNow -> AppColors.TextDarkPrimary
+                            index < now -> AppColors.ReplayLyricPast
+                            else -> AppColors.ReplayLyricNext
+                        },
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+        if (now + 2 < lines.lastIndex) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(55.dp)
+                    .background(Brush.verticalGradient(listOf(Color.Transparent, AppColors.SurfaceBasic))),
+            )
+        }
     }
 }
 

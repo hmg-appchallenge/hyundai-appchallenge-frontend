@@ -56,6 +56,7 @@ private val CardShape = RoundedCornerShape(32.dp)
 private val CARD_BORDER = 2.dp
 private val SELECTED_CARD_BORDER = 4.dp
 private val ThumbSize = 176.dp
+private val CardHeight = 320.dp
 
 /** 카드 글자. 공용 타이포 토큰에 없는 굵기·크기라 여기서만 쓴다. */
 private val CardNameStyle = AppTypography.BodyLargeStrong.copy(fontWeight = FontWeight.ExtraBold)
@@ -123,7 +124,9 @@ fun CharacterPickerScreen(
                 CharacterGrid(
                     selected = draft,
                     onSelect = { draft = it },
-                    modifier = Modifier.padding(top = 23.dp),
+                    modifier = Modifier
+                        .padding(top = 23.dp)
+                        .fillMaxWidth(),
                 )
                 Spacer(Modifier.weight(1f))
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
@@ -152,12 +155,16 @@ private fun CharacterGrid(selected: MascotCharacter, onSelect: (MascotCharacter)
     val cells: List<MascotCharacter?> = MascotCharacter.entries + null
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(24.dp)) {
         cells.chunked(3).forEach { row ->
+            // 화면이 넓어지면 칸도 같이 넓어져 오른쪽 끝까지 채운다
             Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
                 row.forEach { character ->
+                    val cell = Modifier
+                        .weight(1f)
+                        .height(CardHeight)
                     if (character == null) {
-                        LockedCard()
+                        LockedCard(cell)
                     } else {
-                        CharacterCard(character, isSelected = character == selected, onClick = { onSelect(character) })
+                        CharacterCard(character, isSelected = character == selected, onClick = { onSelect(character) }, modifier = cell)
                     }
                 }
             }
@@ -166,11 +173,10 @@ private fun CharacterGrid(selected: MascotCharacter, onSelect: (MascotCharacter)
 }
 
 @Composable
-private fun CharacterCard(character: MascotCharacter, isSelected: Boolean, onClick: () -> Unit) {
+private fun CharacterCard(character: MascotCharacter, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val border = if (isSelected) SELECTED_CARD_BORDER else CARD_BORDER
     Box(
-        modifier = Modifier
-            .size(width = 242.dp, height = 320.dp)
+        modifier = modifier
             .clip(CardShape)
             .background(AppColors.PopupWarmBackground)
             .border(border, if (isSelected) AppColors.BrandOrange else AppColors.PopupWarmBorder, CardShape)
@@ -203,7 +209,8 @@ private fun CharacterCard(character: MascotCharacter, isSelected: Boolean, onCli
         if (isSelected) {
             Box(
                 modifier = Modifier
-                    .offset(x = 174.dp, y = 12.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(top = 12.dp, end = 20.dp)
                     .size(48.dp)
                     .clip(CircleShape)
                     .background(AppColors.BrandOrange),
@@ -217,10 +224,9 @@ private fun CharacterCard(character: MascotCharacter, isSelected: Boolean, onCli
 
 /** 아직 만날 수 없는 친구 칸. 누를 수 없다. */
 @Composable
-private fun LockedCard() {
+private fun LockedCard(modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
-            .size(width = 242.dp, height = 320.dp)
+        modifier = modifier
             .clip(CardShape)
             .background(AppColors.PopupWarmBackground)
             .border(CARD_BORDER, AppColors.PopupWarmBorder, CardShape),

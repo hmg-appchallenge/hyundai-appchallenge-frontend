@@ -113,6 +113,10 @@ import com.hmgappchallenge.kidsrhythm.ui.component.DancingCharacter
 import com.hmgappchallenge.kidsrhythm.ui.component.highlightWord
 import com.hmgappchallenge.kidsrhythm.ui.component.SongProgressPlayer
 import com.hmgappchallenge.kidsrhythm.ui.component.SongLyricsList
+import com.hmgappchallenge.kidsrhythm.ui.component.LyricsPeek
+import com.hmgappchallenge.kidsrhythm.ui.component.SeekTrack
+import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
+import androidx.compose.foundation.layout.ColumnScope
 
 private val StageShape = RoundedCornerShape(48.dp)
 private val TrackShape = RoundedCornerShape(6.dp)
@@ -133,6 +137,14 @@ private val CharacterHeight = 430.dp
 /** 기본 보기에서 왼쪽 무대에 앉는 친구의 위치와 높이. */
 private val BasicCharacterTop = 287.dp
 private val BasicCharacterHeight = 488.dp
+
+/** 크게 보기에서 가사를 펼쳤을 때 가운데로 줄어든 무대(12칸 중 가운데 8칸)와 친구, 가사 상자 높이. */
+private const val OPEN_STAGE_WIDTH = 1032f / 1572f
+private val OpenStageHeight = 386.dp
+private val OpenFloorTop = 300.dp
+private val OpenCharacterTop = 48.dp
+private val OpenCharacterHeight = 316.dp
+private val OpenLyricsHeight = 232.dp
 
 
 /** 기본 보기 패널. */
@@ -277,6 +289,8 @@ fun CompletedScreen(
         return
     }
     val lyric = song.lyrics.getOrNull(lyricIndexAt(song, positionMillis)).orEmpty()
+    // 가사 한 줄을 누르면 무대를 줄이고 가사 몇 줄을 펼친다. 무대의 크게 보기로 다시 접는다
+    var lyricsOpen by rememberSaveable { mutableStateOf(false) }
 
     SubPage(
         title = "완성!",
@@ -292,6 +306,24 @@ fun CompletedScreen(
             )
         },
     ) {
+        if (lyricsOpen) {
+            LyricsOpenView(
+                song = song,
+                character = character,
+                membersLabel = membersLabel,
+                isPlaying = isPlaying,
+                positionMillis = positionMillis,
+                saving = saving,
+                onTogglePlay = onTogglePlay,
+                onSeek = onSeek,
+                onClose = { lyricsOpen = false },
+                onSave = onSave,
+                onMakeAnother = onMakeAnother,
+                celebrating = celebrating,
+                onCelebrationEnd = onCelebrationEnd,
+            )
+            return@SubPage
+        }
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -324,7 +356,13 @@ fun CompletedScreen(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            LyricLine(lyric, song.highlightWord, modifier = Modifier.weight(1f))
+            LyricLine(
+                lyric,
+                song.highlightWord,
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable(role = Role.Button) { lyricsOpen = true },
+            )
             LargeButton(
                 text = if (saving) "저장하는 중" else "보관함에 저장",
                 onClick = onSave,
@@ -348,11 +386,106 @@ fun CompletedScreen(
             durationMillis = song.durationMillis,
             isPlaying = isPlaying,
             onTogglePlay = onTogglePlay,
+            onSeek = { onSeek((it * song.durationMillis).toLong()) },
             // 아직 저장하지 않은 곡이라 다른 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
             onNext = {
                 onSeek(0)
                 if (!isPlaying) onTogglePlay()
             },
+        )
+    }
+}
+
+/**
+ * 크게 보기에서 가사를 펼친 모습. 무대는 가운데로 줄고, 아래에 가사 몇 줄·미니 플레이어·저장 버튼을 둔다.
+ * 가사 줄을 누르면 그 부분부터 듣고, 무대의 크게 보기를 누르면 [onClose]로 다시 접는다.
+ */
+@Composable
+private fun ColumnScope.LyricsOpenView(
+    song: CompletedSong,
+    character: MascotCharacter,
+    membersLabel: String,
+    isPlaying: Boolean,
+    positionMillis: Long,
+    saving: Boolean,
+    onTogglePlay: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onClose: () -> Unit,
+    onSave: () -> Unit,
+    onMakeAnother: () -> Unit,
+    celebrating: Boolean,
+    onCelebrationEnd: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .align(Alignment.CenterHorizontally)
+            .fillMaxWidth(OPEN_STAGE_WIDTH)
+            .height(OpenStageHeight)
+            .clip(StageShape)
+            .background(AppColors.CompletedStageBackground),
+    ) {
+        StageFloor(top = OpenFloorTop)
+        DancingCharacter(
+            character,
+            animation = mascotAnimationFor(character, speedZoneForBpm(song.bpm)),
+            top = OpenCharacterTop,
+            height = OpenCharacterHeight,
+        )
+        if (celebrating) {
+            FireworkCelebration(onEnd = onCelebrationEnd, modifier = Modifier.align(Alignment.Center).requiredSize(FireworkSize))
+        }
+        StageViewButton(
+            text = "크게 보기",
+            icon = R.drawable.ic_expand,
+            onClick = onClose,
+            modifier = Modifier.offset(x = 39.dp, y = 36.dp),
+        )
+    }
+    LyricsPeek(
+        lines = song.lyrics,
+        current = lyricIndexAt(song, positionMillis),
+        activeText = { highlightWord(song.lyrics[it], song.highlightWord) },
+        onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
+        modifier = Modifier
+            .padding(top = 35.dp)
+            .fillMaxWidth()
+            .height(OpenLyricsHeight),
+    )
+    SongMiniPlayer(
+        title = song.title,
+        subtitle = membersLabel,
+        progress = if (song.durationMillis > 0) positionMillis.toFloat() / song.durationMillis else 0f,
+        isPlaying = isPlaying,
+        onTogglePlay = onTogglePlay,
+        // 아직 저장하지 않은 곡이라 다른 곡으로 넘기지 않고, 이 곡을 처음부터 다시 튼다
+        onNext = {
+            onSeek(0)
+            if (!isPlaying) onTogglePlay()
+        },
+        buttonSize = 63.dp,
+        onSeek = { onSeek((it * song.durationMillis).toLong()) },
+        modifier = Modifier
+            .padding(top = 38.dp)
+            .fillMaxWidth(),
+    )
+    Spacer(Modifier.weight(1f))
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
+    ) {
+        LargeButton(
+            text = if (saving) "저장하는 중" else "보관함에 저장",
+            onClick = onSave,
+            enabled = !saving,
+            icon = R.drawable.ic_save,
+            modifier = Modifier.width(320.dp),
+        )
+        LargeButton(
+            text = "한 곡 더",
+            onClick = onMakeAnother,
+            icon = R.drawable.ic_replay,
+            variant = LargeButtonVariant.Secondary,
+            modifier = Modifier.width(320.dp),
         )
     }
 }
@@ -542,6 +675,7 @@ private fun MiniPlayer(
     durationMillis: Long,
     isPlaying: Boolean,
     onTogglePlay: () -> Unit,
+    onSeek: (Float) -> Unit,
     onNext: () -> Unit,
 ) {
     Row(
@@ -562,21 +696,7 @@ private fun MiniPlayer(
                 Text(subtitle, style = PlayerMetaStyle, color = AppColors.TextDarkTertiary, maxLines = 1)
             }
             val fraction = if (durationMillis > 0) positionMillis.toFloat() / durationMillis else 0f
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(12.dp)
-                    .clip(TrackShape)
-                    .background(AppColors.MiniPlayerTrack),
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(fraction.coerceIn(0f, 1f))
-                        .height(12.dp)
-                        .clip(TrackShape)
-                        .background(AppColors.BrandOrange),
-                )
-            }
+            SeekTrack(fraction, height = 12.dp, shape = TrackShape, trackColor = AppColors.MiniPlayerTrack, onSeek = onSeek)
             Row(modifier = Modifier.fillMaxWidth()) {
                 Text(formatPlayTime(positionMillis), style = PlayerMetaStyle, color = AppColors.TextDarkTertiary)
                 Spacer(Modifier.weight(1f))
