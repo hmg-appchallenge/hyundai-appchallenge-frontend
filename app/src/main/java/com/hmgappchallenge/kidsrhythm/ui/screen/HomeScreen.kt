@@ -11,6 +11,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import com.hmgappchallenge.kidsrhythm.ui.component.PopupOverlay
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -83,6 +87,9 @@ fun HomeScreen(
     micBlocked: Boolean = false,
     onDismissMicBlocked: () -> Unit = {},
     onOpenMicSettings: () -> Unit = {},
+    noVoice: Boolean = false,
+    onDismissNoVoice: () -> Unit = {},
+    onRegisterVoice: () -> Unit = {},
 ) {
     // 동의 없이 시작을 누를 때마다 안내를 새로 띄우고 잠시 뒤 숨긴다
     // 홈에 다시 들어왔을 때 지난 안내를 또 띄우지 않도록, 띄운 횟수를 기억한다
@@ -183,6 +190,8 @@ fun HomeScreen(
                     confirmIcon = R.drawable.ic_settings,
                     confirmVariant = LargeButtonVariant.Primary,
                 )
+            } else if (noVoice) {
+                NoVoicePopup(onRegister = onRegisterVoice, onDismiss = onDismissNoVoice)
             } else if (isNoticeVisible) {
                 NoticeSnackbar(
                     icon = R.drawable.ic_shield,
@@ -213,6 +222,57 @@ private fun HomeScreenPreview() {
         onPlayRecent = {},
         onAgreeConsent = {},
         onDismissConsent = {},
+    )
+}
+
+/** 가족 중 목소리를 등록한 사람이 없으면 녹음에서 누가 말했는지 알 수 없어, 노래 만들기 전에 등록을 권한다. */
+@Composable
+private fun BoxScope.NoVoicePopup(onRegister: () -> Unit, onDismiss: () -> Unit) {
+    PopupOverlay(topPadding = 421.dp, width = 808.dp) {
+        Column(verticalArrangement = Arrangement.spacedBy(40.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text("아직 등록된 목소리가 없어요", style = AppTypography.TitleLargeExtraStrong, color = AppColors.TextDarkPrimary)
+                Text("등록된 목소리가 없으면 녹음인식이 안돼요.", style = AppTypography.BodyLargeStrong, color = AppColors.TextDarkSecondary)
+            }
+            LargeButton(
+                text = "목소리 등록하기",
+                onClick = onRegister,
+                icon = R.drawable.ic_mic,
+                variant = LargeButtonVariant.Filled,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        Icon(
+            painter = painterResource(R.drawable.ic_close),
+            contentDescription = "닫기",
+            tint = AppColors.IconDarkPrimary,
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                // 닫기 버튼은 안쪽 여백을 넘어 오른쪽 위 모서리 쪽에 붙는다
+                .offset(x = 8.dp, y = (-12).dp)
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onDismiss),
+        )
+    }
+}
+
+@Preview(widthDp = 1700, heightDp = 1184)
+@Composable
+private fun NoVoicePopupPreview() {
+    HomeScreen(
+        character = MascotCharacter.LION,
+        recentSong = null,
+        isConsentVisible = false,
+        onStart = {},
+        onOpenVoiceSettings = {},
+        onOpenCharacterPicker = {},
+        onOpenSettings = {},
+        onOpenArchive = {},
+        onPlayRecent = {},
+        onAgreeConsent = {},
+        onDismissConsent = {},
+        noVoice = true,
     )
 }
 
