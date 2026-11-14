@@ -117,6 +117,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.LyricsPeek
 import com.hmgappchallenge.kidsrhythm.ui.component.SeekTrack
 import com.hmgappchallenge.kidsrhythm.ui.component.SongMiniPlayer
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.ui.draw.rotate
 
 private val StageShape = RoundedCornerShape(48.dp)
 private val TrackShape = RoundedCornerShape(6.dp)
@@ -127,24 +128,27 @@ private const val SAVE_ERROR_MILLIS = 3_000L
 
 private val FireworkSize = DpSize(800.dp, 600.dp)
 
-private val StageHeight = 598.dp
-private val FloorTop = 480.dp
+private val StageHeight = 479.dp
+private val FloorTop = 334.dp
 
 /** 크게 보기에서 앉은 친구가 무대 가운데에 앉는 위치와 높이. 파티클은 이 친구의 가운데에서 퍼진다. */
-private val CharacterTop = 103.dp
-private val CharacterHeight = 430.dp
+private val CharacterTop = 67.dp
+private val CharacterHeight = 363.dp
 
 /** 기본 보기에서 왼쪽 무대에 앉는 친구의 위치와 높이. */
 private val BasicCharacterTop = 287.dp
 private val BasicCharacterHeight = 488.dp
 
 /** 크게 보기에서 가사를 펼쳤을 때 가운데로 줄어든 무대(12칸 중 가운데 8칸)와 친구, 가사 상자 높이. */
-private const val OPEN_STAGE_WIDTH = 1032f / 1572f
-private val OpenStageHeight = 386.dp
-private val OpenFloorTop = 300.dp
-private val OpenCharacterTop = 48.dp
-private val OpenCharacterHeight = 316.dp
-private val OpenLyricsHeight = 232.dp
+private const val OPEN_STAGE_WIDTH = 1022f / 1572f
+private val OpenStageHeight = 404.dp
+private val OpenFloorTop = 312.dp
+private val OpenCharacterTop = 43.dp
+private val OpenCharacterHeight = 340.dp
+private val OpenLyricsHeight = 236.dp
+
+/** 크게 보기의 주황 가사 막대. 누르면 가사를 펼친다. */
+private val LyricBarShape = RoundedCornerShape(32.dp)
 
 
 /** 기본 보기 패널. */
@@ -348,37 +352,15 @@ fun CompletedScreen(
                 modifier = Modifier.offset(x = 39.dp, y = 36.dp),
             )
         }
-        Row(
+        LyricBar(
+            lyric,
+            song.highlightWord,
+            onClick = { lyricsOpen = true },
             modifier = Modifier
-                .padding(top = 32.dp)
-                .fillMaxWidth()
-                .height(100.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            LyricLine(
-                lyric,
-                song.highlightWord,
-                modifier = Modifier
-                    .weight(1f)
-                    .clickable(role = Role.Button) { lyricsOpen = true },
-            )
-            LargeButton(
-                text = if (saving) "저장하는 중" else "보관함에 저장",
-                onClick = onSave,
-                enabled = !saving,
-                icon = R.drawable.ic_save,
-                modifier = Modifier.width(320.dp),
-            )
-            LargeButton(
-                text = "한 곡 더",
-                onClick = onMakeAnother,
-                icon = R.drawable.ic_replay,
-                variant = LargeButtonVariant.Secondary,
-                modifier = Modifier.width(320.dp),
-            )
-        }
-        Spacer(Modifier.weight(1f))
+                .padding(top = 31.dp)
+                .fillMaxWidth(),
+        )
+        Spacer(Modifier.height(24.dp))
         MiniPlayer(
             title = song.title,
             subtitle = membersLabel,
@@ -392,6 +374,32 @@ fun CompletedScreen(
                 onSeek(0)
                 if (!isPlaying) onTogglePlay()
             },
+        )
+        Spacer(Modifier.weight(1f))
+        SaveActions(saving, onSave, onMakeAnother)
+    }
+}
+
+/** 크게 보기 오른쪽 아래의 보관함에 저장 · 한 곡 더. */
+@Composable
+private fun SaveActions(saving: Boolean, onSave: () -> Unit, onMakeAnother: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
+    ) {
+        LargeButton(
+            text = if (saving) "저장하는 중" else "보관함에 저장",
+            onClick = onSave,
+            enabled = !saving,
+            icon = R.drawable.ic_save,
+            modifier = Modifier.width(320.dp),
+        )
+        LargeButton(
+            text = "한 곡 더",
+            onClick = onMakeAnother,
+            icon = R.drawable.ic_replay,
+            variant = LargeButtonVariant.Secondary,
+            modifier = Modifier.width(320.dp),
         )
     }
 }
@@ -446,11 +454,34 @@ private fun ColumnScope.LyricsOpenView(
         current = lyricIndexAt(song, positionMillis),
         activeText = { highlightWord(song.lyrics[it], song.highlightWord) },
         onLineClick = { index -> song.lyricStartsMillis.getOrNull(index)?.let(onSeek) },
+        nextLines = 1,
+        fade = false,
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 29.dp),
         modifier = Modifier
-            .padding(top = 35.dp)
+            .padding(top = 27.dp)
             .fillMaxWidth()
             .height(OpenLyricsHeight),
-    )
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 22.dp, end = 34.dp)
+                .size(52.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onClose),
+            contentAlignment = Alignment.Center,
+        ) {
+            // 뒤로 가기 화살표를 아래로 돌려 접기 표시로 쓴다
+            Icon(
+                painterResource(R.drawable.ic_back),
+                contentDescription = "가사 접기",
+                tint = AppColors.LyricsFoldIcon,
+                modifier = Modifier
+                    .size(52.dp)
+                    .rotate(-90f),
+            )
+        }
+    }
     SongMiniPlayer(
         title = song.title,
         subtitle = membersLabel,
@@ -465,29 +496,11 @@ private fun ColumnScope.LyricsOpenView(
         buttonSize = 63.dp,
         onSeek = { onSeek((it * song.durationMillis).toLong()) },
         modifier = Modifier
-            .padding(top = 38.dp)
+            .padding(top = 24.dp)
             .fillMaxWidth(),
     )
     Spacer(Modifier.weight(1f))
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.End),
-    ) {
-        LargeButton(
-            text = if (saving) "저장하는 중" else "보관함에 저장",
-            onClick = onSave,
-            enabled = !saving,
-            icon = R.drawable.ic_save,
-            modifier = Modifier.width(320.dp),
-        )
-        LargeButton(
-            text = "한 곡 더",
-            onClick = onMakeAnother,
-            icon = R.drawable.ic_replay,
-            variant = LargeButtonVariant.Secondary,
-            modifier = Modifier.width(320.dp),
-        )
-    }
+    SaveActions(saving, onSave, onMakeAnother)
 }
 
 /**
@@ -648,22 +661,40 @@ private fun SongTitle(title: String, label: String, onEdit: () -> Unit) {
     }
 }
 
-/** 지금 부르는 가사 한 줄. 제목 단어를 주황으로 강조한다. */
+/** 크게 보기의 주황 가사 막대: 지금 부르는 한 줄과 펼치기 표시. 제목 단어는 흰색으로 강조한다. */
 @Composable
-private fun LyricLine(line: String, highlight: String?, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(painterResource(R.drawable.ic_music), contentDescription = null, tint = AppColors.BrandOrange, modifier = Modifier.size(36.dp))
+private fun LyricBar(line: String, highlight: String?, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .height(100.dp)
+            .clip(LyricBarShape)
+            .background(AppColors.BrandOrange)
+            .clickable(role = Role.Button, onClickLabel = "가사 펼치기", onClick = onClick)
+            .padding(start = 43.dp, end = 34.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_music), contentDescription = null, tint = AppColors.LyricBarHighlight, modifier = Modifier.size(36.dp))
         val text = buildAnnotatedString {
             val start = highlight?.let { line.indexOf(it) } ?: -1
             if (highlight == null || start < 0) {
                 append(line)
             } else {
                 append(line.substring(0, start))
-                withStyle(SpanStyle(color = AppColors.BrandOrange)) { append(highlight) }
+                withStyle(SpanStyle(color = AppColors.LyricBarHighlight)) { append(highlight) }
                 append(line.substring(start + highlight.length))
             }
         }
-        Text(text, style = AppTypography.TitleSmall, color = AppColors.TextDarkPrimary, maxLines = 1)
+        Text(text, style = AppTypography.TitleSmall, color = AppColors.LyricBarText, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+        // 뒤로 가기 화살표를 위로 돌려 펼치기 표시로 쓴다
+        Icon(
+            painterResource(R.drawable.ic_back),
+            contentDescription = null,
+            tint = AppColors.LyricBarHighlight,
+            modifier = Modifier
+                .size(52.dp)
+                .rotate(90f),
+        )
     }
 }
 

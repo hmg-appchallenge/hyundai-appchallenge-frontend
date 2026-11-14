@@ -153,6 +153,11 @@ object AppColors {
     val ReplayLyricNow = AppPalette.Orange100
     val ReplayLyricPast = Color(0x52131417)
     val ReplayLyricNext = Color(0xCC181310)
+    /** S06 크게 보기의 주황 가사 막대 글자와 강조 단어 · 아이콘. */
+    val LyricBarText = AppPalette.Orange200
+    val LyricBarHighlight = AppPalette.WarmWhite100
+    /** S06 가사를 펼친 상자 오른쪽 위 접기 화살표. */
+    val LyricsFoldIcon = AppPalette.WarmGray900
     val SettingsGroupBackground = AppPalette.WarmGray100
     val SettingsDivider = AppPalette.WarmGray300
     val SettingsActionText = AppPalette.WarmWhite100
