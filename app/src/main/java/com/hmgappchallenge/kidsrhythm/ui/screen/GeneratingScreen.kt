@@ -59,6 +59,7 @@ import com.hmgappchallenge.kidsrhythm.ui.component.SubPage
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppColors
 import com.hmgappchallenge.kidsrhythm.ui.theme.AppTypography
 import kotlin.math.abs
+import kotlin.math.floor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
@@ -77,8 +78,8 @@ private val CharacterFloor = 746.dp
 private val CharacterHeight = 412.dp
 private val CharacterTop = CharacterFloor - CharacterHeight
 
-/** 이웃한 캐릭터의 가운데끼리 거리. */
-private val CharacterSpacing = 310.dp
+/** 이웃한 캐릭터 그림 사이의 빈 간격. 캐릭터마다 그림 폭이 달라서 폭을 보고 자리를 잡는다. */
+private const val CHARACTER_GAP_DP = 8f
 
 /** 가운데에서 한 칸 이상 떨어진 캐릭터의 흐림 정도와 불투명도. */
 private val SideCharacterBlur = 4.dp
@@ -294,6 +295,11 @@ private fun BoxScope.CharacterCarousel() {
             position.animateTo(position.value + 1f, tween(CAROUSEL_SLIDE_MILLIS, easing = FastOutSlowInEasing))
         }
     }
+    // 같은 높이로 그렸을 때 캐릭터마다의 폭 (dp)
+    val widths = characters.map { character ->
+        val size = painterResource(character.imageRes(MascotPose.Sitting)).intrinsicSize
+        CharacterHeight.value * size.width / size.height
+    }
     characters.forEachIndexed { index, character ->
         val slot = carouselSlot(index, position.value, characters.size)
         val distance = abs(slot).coerceAtMost(1f)
@@ -304,7 +310,7 @@ private fun BoxScope.CharacterCarousel() {
                 .align(Alignment.TopCenter)
                 .zIndex(-abs(slot))
                 .padding(top = CharacterTop)
-                .offset(x = CharacterSpacing * slot)
+                .offset(x = carouselOffset(index, slot, widths, CHARACTER_GAP_DP).dp)
                 .height(CharacterHeight)
                 .alpha(1f - (1f - SIDE_CHARACTER_ALPHA) * distance)
                 .blur(SideCharacterBlur * distance),
@@ -326,8 +332,33 @@ private fun BoxScope.CharacterCarousel() {
     )
 }
 
+/**
+ * [slot]칸에 있는 [index]번 캐릭터의 가운데가 무대 가운데에서 얼마나 떨어졌는지 (dp).
+ * 칸이 딱 맞을 때는 사이의 캐릭터 폭([widths])과 [gap]을 더해 이웃끼리 그림 사이가 늘 [gap]이 되게 하고,
+ * 칸 사이를 지나는 동안은 양쪽 자리 사이를 고르게 옮겨 간다.
+ */
+internal fun carouselOffset(index: Int, slot: Float, widths: List<Float>, gap: Float): Float {
+    val lower = floor(slot).toInt()
+    val t = slot - lower
+    val from = offsetAtSlot(index, lower, widths, gap)
+    val to = offsetAtSlot(index, lower + 1, widths, gap)
+    return from + (to - from) * t
+}
+
+/** [index]번 캐릭터가 정수 [slot]칸에 있을 때의 자리. 그때 가운데에는 [index] - [slot]번 캐릭터가 앉는다. */
+private fun offsetAtSlot(index: Int, slot: Int, widths: List<Float>, gap: Float): Float {
+    if (slot == 0) return 0f
+    val count = widths.size
+    val center = Math.floorMod(index - slot, count)
+    val direction = if (slot > 0) 1 else -1
+    var distance = widths[center] / 2 + gap
+    for (step in 1 until abs(slot)) distance += widths[Math.floorMod(center + direction * step, count)] + gap
+    distance += widths[index] / 2
+    return direction * distance
+}
+
 /** 가운데(0)에서 몇 칸 떨어졌는지. 한 바퀴를 돌면 반대편 끝으로 넘어간다. */
-private fun carouselSlot(index: Int, position: Float, count: Int): Float {
+internal fun carouselSlot(index: Int, position: Float, count: Int): Float {
     val half = count / 2f
     return ((index - position) % count + count + half) % count - half
 }
