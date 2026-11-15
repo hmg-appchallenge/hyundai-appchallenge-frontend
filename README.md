@@ -5,7 +5,8 @@
 <h1 align="center">차곡차곡</h1>
 
 <p align="center">
-  차 안에서 가족의 목소리를 모아, 세상에 하나뿐인 우리 가족만의 동요를 만드는 패밀리 뮤직 서비스<br>
+  출발부터 도착까지 차가 달리는 리듬 위에 가족의 목소리와 악기가 하나씩 더해져,<br>
+  드라이브마다 우리 가족만의 노래가 완성되는 차량용 가족 음악 앱<br>
   <b>팀 스포티카이</b> · 현대자동차그룹 차량용 앱 개발 공모전
 </p>
 
@@ -147,10 +148,18 @@ adb shell run-as com.hmgappchallenge.kidsrhythm --user 10 ls files/songs
 | 항목 | 값 |
 |---|---|
 | minSdk / targetSdk | 28 / 34 |
-| 에뮬레이터 | Pleos Connect Emulator 2.1.0 (API 34, Automotive, Cold boot, RAM 4 GB) |
+| 개발에 쓴 에뮬레이터 | Pleos Connect Emulator 2.1.0 (API 34, Automotive, Cold boot, RAM 4 GB) |
 | 화면 규격 | 2560 × 1440, 160 dpi (가로형 차량 디스플레이) |
+| 실행 사용자 | 운전자 사용자 10 (`adb install`·`am start`에 `--user 10`) |
 | 노래 생성 서버 | 제출용 APK는 심사용 서버(Hugging Face Spaces)에 붙어요. 에뮬레이터를 켠 PC가 인터넷에 연결돼 있어야 해요 |
 | 빌드 도구 | JDK 17, Gradle wrapper |
+
+심사·시연 전에 필요한 설정이에요.
+
+1. **에뮬레이터 마이크 켜기**: 기본으로 꺼져 있어요. 끈 채로 녹음하면 아무 소리도 들어가지 않아요 ("실행 방법" 5번).
+2. **인터넷 연결**: 노래는 심사용 서버에서 만들어요. 제출용 APK에는 서버 주소와 키가 들어 있어서 `local.properties`는 필요 없어요.
+3. **앱 권한 허용**: 처음 켤 때 차량 속도(\"위치 정보\"로 표시돼요)와 마이크 권한을 물어요. 둘 다 허용해야 속도에 맞는 비트와 녹음이 돼요.
+4. **보호자 동의**: 처음 켜면 S00 보호자 동의 창이 떠요. 동의해야 노래 만들기를 시작할 수 있어요.
 
 ```bash
 ./gradlew compileDebugKotlin lintDebug testDebugUnitTest assembleDebug
